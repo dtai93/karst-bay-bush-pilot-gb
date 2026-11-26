@@ -1,0 +1,16 @@
+// Mulberry32. Same seed, same stream, so screenshot scenes stay fixed.
+
+export function createRng(seed) {
+  let state = (Number(seed) >>> 0) || 1;
+  return function rng() {
+    state = (state + 0x6d2b79f5) >>> 0;
+    let mixed = state;
+    mixed = Math.imul(mixed ^ (mixed >>> 15), mixed | 1);
+    mixed ^= mixed + Math.imul(mixed ^ (mixed >>> 7), mixed | 61);
+    return ((mixed ^ (mixed >>> 14)) >>> 0) / 4294967296;
+  };
+}
+
+export function range(rng, lo, hi) {
+  return lo + (hi - lo) * rng();
+}

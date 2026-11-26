@@ -1,0 +1,38 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Limestone Wings: Karst Bay Bush Pilot</title>
+<style>
+  html, body {
+    margin: 0;
+    height: 100%;
+    background: #1c140e;
+    overflow: hidden;
+  }
+  #view, #hud {
+    position: fixed;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    display: block;
+  }
+  #hud { pointer-events: none; }
+  #status {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
+</style>
+</head>
+<body>
+<canvas id="view" aria-label="Limestone Wings, a bush plane over Karst Bay"></canvas>
+<canvas id="hud" aria-hidden="true"></canvas>
+<p id="status" role="status" aria-live="polite"></p>
+<script type="module" src="./src/main.js"></script>
+</body>
+</html>
