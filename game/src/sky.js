@@ -32,19 +32,62 @@ function skyDome() {
   return mesh;
 }
 
-function puff(x, y, z, scale) {
-  const group = new THREE.Group();
-  const material = new THREE.MeshBasicMaterial({ color: 0xfff6e6, transparent: true, opacity: 0.9 });
-  const seeds = [[0, 0, 0, 1], [0.7, 0.1, 0.2, 0.75], [-0.65, 0.05, 0.15, 0.7], [0.2, 0.25, -0.2, 0.55]];
-  for (let i = 0; i < seeds.length; i += 1) {
-    const ball = new THREE.Mesh(new THREE.SphereGeometry(18, 8, 6), material);
-    ball.position.set(seeds[i][0] * 40, seeds[i][1] * 20, seeds[i][2] * 30);
-    ball.scale.setScalar(seeds[i][3]);
-    group.add(ball);
+function noise(index, axis) {
+  const value = Math.sin(index * 127.1 + axis * 311.7 + 74.7) * 43758.5453;
+  return value - Math.floor(value);
+}
+
+function buildClouds() {
+  const clouds = new THREE.InstancedMesh(
+    new THREE.SphereGeometry(24, 8, 6),
+    new THREE.MeshStandardMaterial({
+      color: 0xffffff,
+      roughness: 1,
+      flatShading: true,
+      transparent: true,
+      opacity: 0.88,
+      depthWrite: false,
+    }),
+    132,
+  );
+  const dummy = new THREE.Object3D();
+  const tint = new THREE.Color();
+  let index = 0;
+  for (let cluster = 0; cluster < 30; cluster += 1) {
+    const forward = cluster < 18;
+    const angle = forward
+      ? -Math.PI / 2 + (cluster / 17 - 0.5) * 1.0
+      : (cluster - 18) / 12 * Math.PI * 2 + noise(cluster, 1) * 0.16;
+    const distance = forward
+      ? 600 + noise(cluster, 2) * 900
+      : 1000 + noise(cluster, 2) * 1900;
+    const centerX = Math.cos(angle) * distance;
+    const centerZ = Math.sin(angle) * distance;
+    const centerY = forward
+      ? 180 + noise(cluster, 3) * 160
+      : 260 + noise(cluster, 3) * 220;
+    const puffs = 3 + cluster % 2;
+    for (let puff = 0; puff < puffs; puff += 1) {
+      const side = (puff - (puffs - 1) * 0.5) * 42;
+      const size = 0.75 + noise(cluster * 7 + puff, 4) * 1.15;
+      dummy.position.set(
+        centerX + Math.cos(angle + Math.PI / 2) * side + (noise(cluster * 9 + puff, 5) - 0.5) * 36,
+        centerY + (noise(cluster * 11 + puff, 6) - 0.5) * 24,
+        centerZ + Math.sin(angle + Math.PI / 2) * side,
+      );
+      dummy.rotation.set(0, angle, 0);
+      dummy.scale.set(size * 1.55, size * 0.7, size);
+      dummy.updateMatrix();
+      clouds.setMatrixAt(index, dummy.matrix);
+      tint.setHex(puff === 0 ? 0xffe6c6 : 0xfff5e4);
+      clouds.setColorAt(index, tint);
+      index += 1;
+    }
   }
-  group.position.set(x, y, z);
-  group.scale.set(scale, scale * 0.45, scale);
-  return group;
+  clouds.count = index;
+  clouds.instanceMatrix.needsUpdate = true;
+  if (clouds.instanceColor) clouds.instanceColor.needsUpdate = true;
+  return clouds;
 }
 
 export function createSky(scene) {
@@ -53,35 +96,28 @@ export function createSky(scene) {
   scene.add(skyDome());
 
   const sun = new THREE.DirectionalLight(0xffd4a6, 2.35);
-  sun.position.set(-180, 140, 90);
+  sun.position.set(120, 170, -500);
   scene.add(sun);
   scene.add(new THREE.HemisphereLight(0xffe4c0, 0x4e6a40, 0.72));
   scene.add(new THREE.AmbientLight(0xfff0dc, 0.28));
 
-  const sunDir = new THREE.Vector3(-0.74, 0.52, 0.32).normalize().multiplyScalar(5200);
+  const sunDir = new THREE.Vector3(0.22, 0.3, -0.93).normalize().multiplyScalar(5200);
   const disc = new THREE.Mesh(
-    new THREE.CircleGeometry(210, 24),
-    new THREE.MeshBasicMaterial({ color: 0xfff4cc, fog: false, depthWrite: false }),
+    new THREE.CircleGeometry(105, 24),
+    new THREE.MeshBasicMaterial({ color: 0xffbd68, fog: false, depthWrite: false }),
   );
   disc.position.copy(sunDir);
   disc.lookAt(0, 0, 0);
   scene.add(disc);
   const halo = new THREE.Mesh(
-    new THREE.CircleGeometry(420, 24),
-    new THREE.MeshBasicMaterial({ color: 0xffc98a, transparent: true, opacity: 0.35, fog: false, depthWrite: false }),
+    new THREE.CircleGeometry(210, 24),
+    new THREE.MeshBasicMaterial({ color: 0xffa45d, transparent: true, opacity: 0.1, fog: false, depthWrite: false }),
   );
   halo.position.copy(sunDir);
   halo.lookAt(0, 0, 0);
   scene.add(halo);
 
-  const clouds = new THREE.Group();
-  clouds.add(puff(-280, 340, -520, 2.4));
-  clouds.add(puff(460, 390, -180, 2.1));
-  clouds.add(puff(-720, 420, 380, 2.8));
-  clouds.add(puff(180, 460, -1400, 3.2));
-  clouds.add(puff(980, 360, 220, 2.2));
-  clouds.add(puff(-80, 300, 820, 1.8));
-  clouds.add(puff(240, 480, 1400, 2.6));
+  const clouds = buildClouds();
   scene.add(clouds);
   return { clouds };
 }

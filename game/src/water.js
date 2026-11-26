@@ -100,22 +100,22 @@ function foamRings() {
 }
 
 function sunGlitter() {
-  const direction = new THREE.Vector2(-0.74, 0.32).normalize();
+  const direction = new THREE.Vector2(0.22, -0.96).normalize();
   const across = new THREE.Vector2(-direction.y, direction.x);
   const geometry = new THREE.PlaneGeometry(1, 1);
   geometry.rotateX(-Math.PI / 2);
   const mesh = new THREE.InstancedMesh(
     geometry,
-    new THREE.MeshBasicMaterial({ color: 0xffd28a, transparent: true, opacity: 0.22, depthWrite: false }),
-    64,
+    new THREE.MeshBasicMaterial({ color: 0xffd28a, transparent: true, opacity: 0.035, depthWrite: false }),
+    48,
   );
   const dummy = new THREE.Object3D();
   const heading = Math.atan2(-direction.y, direction.x);
-  for (let i = 0; i < 64; i += 1) {
-    const along = (i - 31.5) * 31;
+  for (let i = 0; i < 48; i += 1) {
+    const along = (i - 23.5) * 45;
     const side = Math.sin(i * 12.9898) * 54;
-    const length = 10 + (i % 5) * 5;
-    const width = 2 + (i % 3) * 1.3;
+    const length = 8 + (i % 5) * 3;
+    const width = 1.5 + (i % 3) * 0.8;
     dummy.position.set(
       direction.x * along + across.x * side,
       WORLD.water + 0.16,
@@ -141,8 +141,8 @@ export function createWater() {
     map: texture,
     bumpMap: texture,
     bumpScale: 0.32,
-    roughness: 0.3,
-    metalness: 0.22,
+    roughness: 0.55,
+    metalness: 0.06,
     emissive: 0x0b3532,
     emissiveIntensity: 0.2,
   });
