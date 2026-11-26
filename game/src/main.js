@@ -20,6 +20,9 @@ import { sampleWeather } from './weather.js';
 import { buyUpgrade, creditMission, loadHangar, upgradeEffects } from './hangar-upgrades.js';
 import { createRng } from './random.js';
 import { stageShot } from './shots.js';
+import { createParticles, emitAircraftEvent, updateParticles } from './particles.js';
+import { createAudio } from './audio.js';
+import { gradeLanding } from './landing-judge.js';
 
 const viewCanvas = document.getElementById('view');
 const hudCanvas = document.getElementById('hud');
@@ -41,6 +44,9 @@ const rings = createRings(FIRST_LIGHT_RINGS);
 scene.add(rings.root);
 const aircraft = createAircraft();
 scene.add(aircraft.root);
+const particles = createParticles(scene);
+const audio = createAudio();
+let brokenWing = null;
 
 const params = new URLSearchParams(window.location.search);
 const shotName = params.get('shot');
@@ -75,6 +81,7 @@ const session = {
   paused: false,
   scripted: false,
   time: 0,
+  eventBanner: null,
   rng: createRng(seed),
   objective: {
     title: 'FIRST LIGHT',
@@ -82,6 +89,7 @@ const session = {
     timer: '06:00',
   },
   step(dt, controls) {
+    const previousTouch = this.flight.touch;
     const weather = sampleWeather(this.mission.id, this.time);
     const upgrades = upgradeEffects(this.hangar);
     stepFlight(this.flight, {
@@ -89,6 +97,20 @@ const session = {
       engineBonus: upgrades.engineBonus, gearBonus: upgrades.gearBonus,
     }, dt);
     const collected = collectRing(this.rings, this.flight);
+    if (collected) audio.event('ring');
+    if (this.flight.touch && !previousTouch) {
+      if (this.flight.crashed) {
+        this.eventBanner = { title: 'CRASH', detail: `${this.flight.crashReason} AT ${Math.round(readout(this.flight).kts)} KTS`, until: this.time + 3, crash: true };
+        emitAircraftEvent(particles, 'crash', this.flight);
+        audio.event('crash');
+      } else {
+        const grade = gradeLanding(this.flight.touch);
+        const title = grade.fpm < 180 ? 'GREASED IT!' : 'FIRM LANDING';
+        this.eventBanner = { title, detail: `${grade.fpm} FPM  ·  GRADE ${grade.grade}`, until: this.time + 2.8, crash: false };
+        emitAircraftEvent(particles, 'touchdown', this.flight);
+        audio.event('touchdown');
+      }
+    }
     advanceMission(this.mission, this.flight, this.rings.index, collected, controls);
     if (this.flight.crashed) this.mission.crashReason = this.flight.crashReason;
     if (this.mission.status === 'complete' && !this.rewardPaid) {
@@ -116,6 +138,8 @@ fit();
 window.addEventListener('resize', fit);
 
 const input = createInput(viewCanvas);
+window.addEventListener('keydown', () => audio.start(), { once: true });
+viewCanvas.addEventListener('pointerdown', () => audio.start(), { once: true });
 
 function resetSortie(id = MISSIONS[session.selectedMission - 1].id) {
   session.flight = freshFlight(session.hangar, id);
@@ -126,6 +150,14 @@ function resetSortie(id = MISSIONS[session.selectedMission - 1].id) {
   session.rings.index = 0;
   for (let i = 0; i < session.rings.list.length; i += 1) session.rings.list[i].taken = false;
   session.camera.ready = false;
+  session.eventBanner = null;
+  if (brokenWing) {
+    scene.remove(brokenWing);
+    aircraft.root.add(aircraft.wings);
+    aircraft.wings.position.set(0, 0, 0);
+    aircraft.wings.rotation.set(0, 0, 0);
+    brokenWing = null;
+  }
   if (!session.scripted) session.objective = missionObjective(session.mission, 360);
 }
 
@@ -140,6 +172,7 @@ function frame(now) {
   last = now;
   if (!session.frozen) {
     const sample = input.sample();
+    if (sample.mute) audio.toggleMute();
     if (sample.view) {
       setCameraMode(session.camera, session.camera.mode === 'chase' ? 'cockpit' : 'chase');
     }
@@ -175,6 +208,19 @@ function frame(now) {
     easeLook(session.camera, elapsed);
   }
   updateAircraft(aircraft, session.flight, session.frozen ? 0 : elapsed);
+  if (session.flight.crashed && !brokenWing) {
+    brokenWing = aircraft.wings;
+    scene.attach(brokenWing);
+    brokenWing.position.x += 2.5;
+    brokenWing.rotation.z += 0.6;
+  }
+  if (brokenWing && !session.frozen) {
+    brokenWing.position.y -= elapsed * 3;
+    brokenWing.rotation.x += elapsed * 1.4;
+  }
+  const liveWeather = sampleWeather(session.mission.id, session.time);
+  updateParticles(particles, session.flight, liveWeather, elapsed, session.frozen);
+  audio.update(session.flight, elapsed);
   aircraft.root.visible = session.camera.mode !== 'cockpit';
   updateRings(rings, session.time);
   updateWater(water, session.time, session.frozen);
@@ -188,6 +234,8 @@ function frame(now) {
     paused: session.paused,
     cockpit: session.camera.mode === 'cockpit',
     weather,
+    time: session.time,
+    eventBanner: session.eventBanner,
   });
   session.mission.stats = {
     fuel: Math.round(session.flight.fuel * 100),

@@ -45,3 +45,11 @@ The sky stages 30 low-poly cloud clusters around a low golden sun.
 The stilt village now has a denser orange-red roof cluster and two white triangular sails on each boat.
 Harbour threshold keys, runway numerals, centerline dashes, edge lights, and PAPI cues are larger.
 Rendered and inspected the 1024x640 cover after each world milestone; changed source modules parse successfully.
+
+V2 phase 2: reshaped the Kestrel K-2 with a tapered fuselage, red cowling and cheat lines, tinted glazing, registration, thick high wing, struts, control surfaces, tundra wheels, and nav lights.
+The propeller now has animated blades and a translucent disc; the chase camera eases, pulls back with speed, clears terrain, and responds to buffet.
+Added deterministic particle effects for prop wash, high-bank vapour, low-pass spray, landing dust, crash smoke/fire, and squall rain.
+Added lazy-start synthesized engine, wind, stall, ring, touchdown, and crash audio with the existing M mute control.
+Landing and crash events now show timed grade/reason banners, crash effects detach a wing, and stall alerts flash with camera shake.
+Changed modules pass Node syntax checks, `git diff --check`, and the local dossier/output copy check.
+The screenshot helper failed twice before rendering because its Chrome DevTools endpoint was unreachable; checked-in screenshots therefore remain the prior phase renders.

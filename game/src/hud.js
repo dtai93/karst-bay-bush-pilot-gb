@@ -351,7 +351,15 @@ export function drawHud(canvas, view) {
   if (!view.cockpit) minimap(ctx, 690, 430, 196, 168, plane, view.rings);
 
   if (plane.buffet > 0.45 && !plane.crashed) {
-    label(ctx, 'STALL', 512, 250, 42, '#ff4d32', 'center');
+    if (Math.floor((view.time ?? 0) * 5) % 2 === 0) {
+      panel(ctx, 420, 222, 184, 58);
+      label(ctx, 'STALL', 512, 251, 38, '#ff4d32', 'center');
+    }
+  }
+  if (view.eventBanner && view.eventBanner.until > (view.time ?? 0)) {
+    panel(ctx, 260, 224, 504, 104);
+    label(ctx, view.eventBanner.title, 512, 258, 30, view.eventBanner.crash ? '#ff6045' : '#ffe14a', 'center');
+    label(ctx, view.eventBanner.detail, 512, 296, 20, '#fff6e4', 'center');
   }
   if (plane.crashed) {
     panel(ctx, 300, 230, 424, 90);
