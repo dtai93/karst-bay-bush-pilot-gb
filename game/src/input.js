@@ -91,6 +91,7 @@ export function createInput(canvas) {
         pause: takeEdge('KeyP'),
         mute: takeEdge('KeyM'),
         restart: takeEdge('KeyR'),
+        start: takeEdge('Enter'),
         lookX,
         lookY,
       };

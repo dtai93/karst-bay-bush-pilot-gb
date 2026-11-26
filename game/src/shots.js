@@ -64,8 +64,19 @@ function flyToward(session, steps, point, altitude) {
 
 export function stageShot(name, session) {
   const shot = name || 'cover';
-  if (shot === 'cover') {
-    placeCover(session);
+  session.screen = 'flight';
+  placeCover(session);
+  if (shot === 'cockpit') {
+    session.camera.mode = 'cockpit';
+    flyToward(session, 74, FIRST_LIGHT_RINGS[COVER_RING], 58);
+    session.objective = { title: 'FIRST LIGHT', line: 'RING 5 / 6  ·  FLY THROUGH', timer: '02:31' };
+  } else if (shot === 'missions') {
+    flyToward(session, 50, FIRST_LIGHT_RINGS[COVER_RING], 56);
+    session.objective = { title: 'FIRST LIGHT', line: 'SIX RINGS  ·  HARBOUR FIELD', timer: '04:18' };
+  } else if (shot === 'debrief') {
+    flyToward(session, 50, FIRST_LIGHT_RINGS[COVER_RING], 56);
+    session.objective = { title: 'FIRST LIGHT', line: 'HARBOUR FIELD  ·  FINAL APPROACH', timer: '00:42' };
+  } else {
     flyToward(session, 50, FIRST_LIGHT_RINGS[COVER_RING], 56);
     pinApproach(session);
     session.objective = {
@@ -73,9 +84,6 @@ export function stageShot(name, session) {
       line: 'RING 5 / 6  ·  THEN LAND',
       timer: '02:46',
     };
-    session.frozen = true;
-    return;
   }
-  placeCover(session);
   session.frozen = true;
 }

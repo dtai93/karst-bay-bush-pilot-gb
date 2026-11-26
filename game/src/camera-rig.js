@@ -4,7 +4,7 @@
 import * as THREE from '../vendor/three.module.min.js';
 
 export function createCameraRig(aspect) {
-  const camera = new THREE.PerspectiveCamera(50, aspect, 0.25, 9000);
+  const camera = new THREE.PerspectiveCamera(46, aspect, 0.25, 9000);
   return {
     camera,
     mode: 'chase',
@@ -34,9 +34,9 @@ export function setCameraMode(rig, mode) {
 export function updateCameraRig(rig, plane, dt) {
   const aim = body(plane.yaw);
   if (rig.mode === 'cockpit') {
-    const eyeX = plane.x + aim.fx * 0.15;
-    const eyeY = plane.y + 0.42;
-    const eyeZ = plane.z + aim.fz * 0.15;
+    const eyeX = plane.x + aim.fx * 0.1;
+    const eyeY = plane.y + 0.96;
+    const eyeZ = plane.z + aim.fz * 1.15;
     rig.camera.position.set(eyeX, eyeY, eyeZ);
     rig.camera.up.set(
       aim.rx * Math.sin(plane.roll),
@@ -52,8 +52,8 @@ export function updateCameraRig(rig, plane, dt) {
     return;
   }
 
-  const back = 32;
-  const up = 10.5;
+  const back = 25;
+  const up = 8.5;
   const side = rig.lookYaw * 14;
   const desiredX = plane.x - aim.fx * back + aim.rx * side;
   const desiredY = plane.y + up + rig.lookPitch * 8;
@@ -67,7 +67,7 @@ export function updateCameraRig(rig, plane, dt) {
   rig.camera.position.set(rig.cx, rig.cy, rig.cz);
   rig.camera.lookAt(
     plane.x + aim.fx * 14,
-    plane.y + 2.4,
+    plane.y,
     plane.z + aim.fz * 14,
   );
 }

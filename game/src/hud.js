@@ -1,6 +1,7 @@
 // Lit flight deck overlay: tapes, horizon, fuel, damage, objective, minimap.
 
 import { FIELDS, TOWERS, islandHeight, wrapPi } from './config.js';
+import { drawInstrumentPanel } from './instrument-panel.js';
 
 function roundRect(ctx, x, y, w, h, r) {
   const radius = Math.min(r, w * 0.5, h * 0.5);
@@ -308,18 +309,22 @@ export function drawHud(canvas, view) {
   const vsText = `${vs > 0 ? '+' : ''}${vs}`;
   label(ctx, vsText, 292, 372, 28, '#ffe14a', 'left');
 
-  meter(ctx, 140, 470, 168, 58, plane.thr, 'THR', false);
-  meter(ctx, 318, 470, 168, 58, plane.fuel, 'FUEL', plane.fuel < 0.22);
-  meter(ctx, 496, 470, 168, 58, plane.dmg, 'DMG', plane.dmg > 0.45);
+  if (view.cockpit) {
+    drawInstrumentPanel(ctx, plane);
+  } else {
+    meter(ctx, 140, 470, 168, 58, plane.thr, 'THR', false);
+    meter(ctx, 318, 470, 168, 58, plane.fuel, 'FUEL', plane.fuel < 0.22);
+    meter(ctx, 496, 470, 168, 58, plane.dmg, 'DMG', plane.dmg > 0.45);
 
-  panel(ctx, 140, 538, 150, 36);
-  label(ctx, `FLAPS ${plane.flaps}`, 152, 556, 16, plane.flaps ? '#ffe14a' : '#fff6e4', 'left');
-  panel(ctx, 298, 538, 110, 36);
-  label(ctx, plane.brake ? 'BRAKE' : 'BRAKE', 312, 556, 16, plane.brake ? '#ff6a4a' : '#9aa098', 'left');
+    panel(ctx, 140, 538, 150, 36);
+    label(ctx, `FLAPS ${plane.flaps}`, 152, 556, 16, plane.flaps ? '#ffe14a' : '#fff6e4', 'left');
+    panel(ctx, 298, 538, 110, 36);
+    label(ctx, plane.brake ? 'BRAKE' : 'BRAKE', 312, 556, 16, plane.brake ? '#ff6a4a' : '#9aa098', 'left');
+  }
 
   const ring = view.rings && view.rings.list[view.rings.index];
   waypoint(ctx, 512, 168, plane, ring && !ring.taken ? ring : null);
-  minimap(ctx, 690, 430, 196, 168, plane, view.rings);
+  if (!view.cockpit) minimap(ctx, 690, 430, 196, 168, plane, view.rings);
 
   if (plane.buffet > 0.45 && !plane.crashed) {
     label(ctx, 'STALL', 512, 250, 42, '#ff4d32', 'center');

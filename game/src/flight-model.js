@@ -99,6 +99,7 @@ export function stepFlight(plane, controls, dt) {
     const rotating = next > AERO.rotateSpeed && (controls.pitch ?? 0) > 0.45 && plane.pitch > 0.08;
     if (rotating && !watery) {
       plane.onGround = false;
+      plane.touch = null;
       plane.vy = 1.4;
       plane.pitch = Math.max(plane.pitch, 0.12);
     }
