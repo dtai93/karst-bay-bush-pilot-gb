@@ -8,7 +8,7 @@ Limestone Wings is a low-altitude bush-flying game over a warm, original karst b
 
 ## Controls
 
-Press 1–5 to choose a mission and Enter to launch. W/S pitch, A/D roll, Q/E rudder, Shift/Ctrl throttle, F flaps, G brakes, C chase/cockpit view, mouse drag look, P pause, Space drops mail, H opens the hangar, and R restarts.
+Press 1–5 to choose a mission and Enter to launch. W/S pitch, A/D roll, Q/E rudder, Shift/Ctrl or mouse wheel throttle, F flaps, G brakes, C chase/cockpit view, mouse drag look, P pause, M mute, Space drops mail, H opens the hangar, and R restarts.
 
 ## Missions
 

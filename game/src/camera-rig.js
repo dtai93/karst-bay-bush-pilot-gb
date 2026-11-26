@@ -46,14 +46,14 @@ export function updateCameraRig(rig, plane, dt) {
     const reach = 90;
     rig.camera.lookAt(
       eyeX + aim.fx * reach,
-      eyeY + Math.sin(plane.pitch) * reach + rig.lookPitch * 8,
+      eyeY + Math.sin(plane.pitch) * reach - 7 + rig.lookPitch * 8,
       eyeZ + aim.fz * reach,
     );
     return;
   }
 
-  const back = 25;
-  const up = 8.5;
+  const back = 19;
+  const up = 7;
   const side = rig.lookYaw * 14;
   const desiredX = plane.x - aim.fx * back + aim.rx * side;
   const desiredY = plane.y + up + rig.lookPitch * 8;

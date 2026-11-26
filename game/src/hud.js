@@ -177,8 +177,15 @@ function meter(ctx, x, y, w, h, fraction, title, warn) {
 function objectivePanel(ctx, x, y, w, h, objective) {
   panel(ctx, x, y, w, h);
   label(ctx, objective.title, x + 12, y + 24, 22, '#ffe14a', 'left');
-  label(ctx, objective.line, x + 12, y + 54, 18, '#fff8ea', 'left');
-  label(ctx, objective.timer, x + 12, y + 84, 26, '#fff8ea', 'left');
+  const lines = objective.line.split('\n');
+  if (lines.length > 1) {
+    label(ctx, lines[0], x + 12, y + 52, 14, '#fff8ea', 'left');
+    label(ctx, lines[1], x + 12, y + 70, 14, '#fff8ea', 'left');
+    label(ctx, objective.timer, x + 12, y + 93, 21, '#fff8ea', 'left');
+  } else {
+    label(ctx, objective.line, x + 12, y + 54, 18, '#fff8ea', 'left');
+    label(ctx, objective.timer, x + 12, y + 84, 26, '#fff8ea', 'left');
+  }
 }
 
 function waypoint(ctx, x, y, plane, ring) {

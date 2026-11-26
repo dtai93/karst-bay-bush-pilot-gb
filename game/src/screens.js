@@ -59,8 +59,8 @@ function drawMissionBoard(ctx, selected, hangar) {
     text(ctx, `${i + 1}`, 130, y + 29, 16, '#ffe06a');
     missionIcon(ctx, i, 165, y + 30);
     text(ctx, item.title.toUpperCase(), 198, y + 17, 16, '#fff1d2', 'left');
-    text(ctx, item.objective.toUpperCase(), 198, y + 42, 11, '#b9d1c6', 'left');
-    text(ctx, `${item.difficulty}  ·  BEST ${hangar.bestStars[item.id] || 0}/3  ·  $${item.pay}`, 894, y + 29, 11, '#f4c777', 'right');
+    text(ctx, item.objective.toUpperCase(), 198, y + 42, 12, '#b9d1c6', 'left');
+    text(ctx, `${item.difficulty}  ·  BEST ${hangar.bestStars[item.id] || 0}/3  ·  $${item.pay}`, 894, y + 29, 12, '#f4c777', 'right');
   }
   text(ctx, 'W/S PITCH  ·  A/D BANK  ·  Q/E RUDDER  ·  SHIFT/CTRL THROTTLE  ·  F FLAPS  ·  G BRAKES', 512, 555, 11);
   text(ctx, 'C COCKPIT  ·  P PAUSE  ·  SPACE MAIL DROP  ·  H HANGAR', 512, 578, 11, '#f4c777');
@@ -68,31 +68,59 @@ function drawMissionBoard(ctx, selected, hangar) {
 
 function drawDebrief(ctx, mission) {
   const success = mission.status === 'complete';
-  ctx.fillStyle = 'rgba(7, 17, 21, .88)';
-  ctx.fillRect(10, 42, 410, 556);
+  ctx.fillStyle = 'rgba(7, 17, 21, .9)';
+  ctx.fillRect(72, 42, 880, 556);
   ctx.strokeStyle = '#e5b763';
   ctx.lineWidth = 2;
-  ctx.strokeRect(10, 42, 410, 556);
-  const center = 215;
-  text(ctx, success ? 'SORTIE COMPLETE' : 'FLIGHT DEBRIEF', center, 119, 23, success ? '#ffe06a' : '#ff8060');
+  ctx.strokeRect(72, 42, 880, 556);
+  text(ctx, success ? 'SORTIE COMPLETE' : 'FLIGHT DEBRIEF', 512, 82, 27, success ? '#ffe06a' : '#ff8060');
   const item = MISSIONS.find((candidate) => candidate.id === mission.id) || MISSIONS[0];
-  text(ctx, `${item.title.toUpperCase()}  ·  ${mission.status.toUpperCase()}`, center, 163, 15);
-  if (mission.status === 'crashed') text(ctx, `CRASHED: ${mission.crashReason || 'AIRCRAFT DOWN'}`, center, 211, 17, '#ff7154');
-  if (mission.landing) {
-    text(ctx, `GRADE ${mission.landing.grade}  ·  ${mission.landing.fpm} FPM`, center, 250, 23, '#ffe06a');
-    text(ctx, `LINE ${mission.landing.offset} M  ·  ZONE ${mission.landing.zone} M`, center, 286, 13);
+  text(ctx, `${item.title.toUpperCase()}  ·  ${mission.status.toUpperCase()}`, 512, 116, 15);
+  if (mission.status === 'crashed') text(ctx, `CRASHED: ${mission.crashReason || 'AIRCRAFT DOWN'}`, 512, 150, 17, '#ff7154');
+
+  const landing = mission.landing;
+  ctx.fillStyle = 'rgba(255, 224, 106, .12)';
+  ctx.beginPath();
+  ctx.arc(205, 248, 91, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.strokeStyle = success ? '#ffe06a' : '#ff8060';
+  ctx.lineWidth = 4;
+  ctx.stroke();
+  text(ctx, 'LANDING GRADE', 205, 190, 15, '#f4c777');
+  text(ctx, landing ? landing.grade : '--', 205, 250, 66, success ? '#ffe06a' : '#ff8060');
+  text(ctx, landing ? `${landing.fpm} FPM` : 'NO TOUCHDOWN', 205, 308, 16);
+
+  const stats = mission.stats || { fuel: 0, damage: 0, elapsed: 0 };
+  const metrics = [
+    ['TOUCHDOWN VS', landing ? `${landing.fpm} FPM` : '-- FPM'],
+    ['LINE OFFSET', landing ? `${landing.offset} M` : '-- M'],
+    ['LANDING ZONE', landing ? `${landing.zone} M` : '-- M'],
+    ['FUEL / DAMAGE', `${stats.fuel}% / ${stats.damage}%`],
+  ];
+  for (let i = 0; i < metrics.length; i += 1) {
+    const x = 340 + (i % 2) * 282;
+    const y = 166 + Math.floor(i / 2) * 82;
+    ctx.fillStyle = 'rgba(255,255,255,.07)';
+    ctx.fillRect(x, y, 264, 68);
+    ctx.strokeStyle = 'rgba(229,183,99,.55)';
+    ctx.lineWidth = 1;
+    ctx.strokeRect(x, y, 264, 68);
+    text(ctx, metrics[i][0], x + 132, y + 20, 13, '#f4c777');
+    text(ctx, metrics[i][1], x + 132, y + 47, 21, '#fff1d2');
   }
+
   const objective = mission.goal === 'rings' ? `${mission.rings}/6 RINGS`
     : mission.goal === 'mail' ? `${mission.drops}/3 MAIL DROPS`
       : mission.goal === 'rescue' ? (mission.rescued ? 'BOAT MARKED' : 'BOAT NOT MARKED')
         : mission.goal === 'cargo' ? 'FISH ICE TO TERRACE'
           : 'SQUALL LANDING · LAGOON';
-  text(ctx, `OBJECTIVE  ${objective}`, center, 343, 11);
-  const stats = mission.stats || { fuel: 0, damage: 0, elapsed: 0 };
-  text(ctx, `FUEL ${stats.fuel}%  ·  DMG ${stats.damage}%  ·  ${String(Math.floor(stats.elapsed / 60)).padStart(2, '0')}:${String(stats.elapsed % 60).padStart(2, '0')}`, center, 378, 14);
-  text(ctx, `SCORE ${mission.score}  ·  ${mission.stars || 0} STARS  ·  PAY $${mission.pay}`, center, 420, 17, '#ffe06a');
-  text(ctx, 'R REFLY  ·  1–5 NEXT FLIGHT', center, 470, 15);
-  text(ctx, 'KESTREL K-2 / KARST BAY', center, 520, 12, '#a9c1b6');
+  const elapsed = `${String(Math.floor(stats.elapsed / 60)).padStart(2, '0')}:${String(stats.elapsed % 60).padStart(2, '0')}`;
+  text(ctx, `OBJECTIVE COMPLETE  ·  ${objective}`, 512, 362, 16);
+  text(ctx, `TIME ${elapsed}  ·  SCORE ${mission.score}`, 512, 395, 15, '#b9d1c6');
+  text(ctx, `${mission.stars || 0} STARS  ·  FLIGHT PAY $${mission.pay}`, 512, 441, 24, '#ffe06a');
+  const feat = landing && landing.grade === 'A' ? 'FEAT: SMOOTH TOUCHDOWN' : `FEAT: ${objective}`;
+  text(ctx, feat, 512, 489, 14, '#f4c777');
+  text(ctx, 'R REFLY  ·  1–5 NEXT FLIGHT  ·  H HANGAR', 512, 552, 15);
 }
 
 export function drawScreen(canvas, screen, mission, selected = 1, hangar = { credits: 0, tank: 0, engine: 0, gear: 0, bestStars: {} }) {

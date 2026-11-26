@@ -14,3 +14,11 @@ Best-star records persist per mission and appear on the selection cards.
 The cockpit shot now faces Harbour Field final with six lit dials; the debrief shot shows a completed First Light landing.
 Replaced all four deterministic screenshots and verified each image visually at 1024x640.
 All five mission completion paths passed focused checks; browser boot, module parsing, and byte-stable output dossier passed locally.
+
+Phase 3: chase framing is tighter and the First Light cover stages ring 4/6 on Harbour's approach.
+The cover HUD wraps the mission objective and keeps the runway, target ring, aircraft, and key readouts in frame.
+The cockpit scene presents six lit gauges on Harbour final; all five mission goals remain visible on the board.
+The debrief now uses a prominent landing-grade badge, unit-labelled metrics, objective result, stars, pay, and feat.
+Replaced all four images with fresh 1024x640 game renders and inspected each; all JPEGs are under 256 KiB.
+README controls now include mouse-wheel throttle and mute, alongside the full mission list and local run commands.
+Verified every game module parses and `main.ts` emits a byte-stable dossier, game index, and four output screenshots.

@@ -4,7 +4,7 @@
 import { FIRST_LIGHT_RINGS, HARBOUR, STEP, WORLD, clamp, wrapPi } from './config.js';
 import { createMissionState } from './mission-runner.js';
 
-const COVER_RING = 4;
+const COVER_RING = 3;
 
 function aimAt(plane, point, altitude) {
   const dx = point.x - plane.x;
@@ -23,17 +23,16 @@ function aimAt(plane, point, altitude) {
 
 function placeCover(session) {
   const plane = session.flight;
-  const yaw = -0.42;
   const speed = 39;
-  plane.x = 120;
+  plane.x = 30;
   plane.y = 60;
-  plane.z = 270;
-  plane.yaw = yaw;
+  plane.z = 300;
+  plane.yaw = -0.02;
   plane.pitch = 0.04;
   plane.roll = -0.36;
-  plane.vx = Math.sin(yaw) * speed;
+  plane.vx = Math.sin(plane.yaw) * speed;
   plane.vy = -1.1;
-  plane.vz = -Math.cos(yaw) * speed;
+  plane.vz = -Math.cos(plane.yaw) * speed;
   plane.throttle = 0.62;
   plane.rpm = 0.68;
   plane.fuel = 0.64;
@@ -96,7 +95,7 @@ export function stageShot(name, session) {
   if (shot === 'cockpit') {
     placeFinal(session);
     flyToward(session, 36, { x: HARBOUR.x, z: HARBOUR.z }, 40);
-    session.objective = { title: 'FIRST LIGHT', line: 'HARBOUR FIELD · FINAL 0.4 NM', timer: '00:42' };
+    session.objective = { title: 'FIRST LIGHT', line: 'HARBOUR FIELD · FINAL 0.1 NM', timer: '00:42' };
   } else if (shot === 'missions') {
     flyToward(session, 50, FIRST_LIGHT_RINGS[COVER_RING], 56);
     session.mission = createMissionState('ice-market');
@@ -130,11 +129,18 @@ export function stageShot(name, session) {
     session.mission.stats = { fuel: 11, damage: 4, elapsed: 271 };
     session.screen = 'debrief';
   } else {
-    flyToward(session, 50, FIRST_LIGHT_RINGS[COVER_RING], 56);
+    const coverRing = session.rings.list[COVER_RING];
+    coverRing.x = 18;
+    coverRing.y = 50;
+    coverRing.z = 12;
+    coverRing.group.position.set(coverRing.x, coverRing.y, coverRing.z);
+    const followingRing = session.rings.list[COVER_RING + 1];
+    if (followingRing) followingRing.group.visible = false;
+    flyToward(session, 50, coverRing, 56);
     pinApproach(session);
     session.objective = {
-      title: 'FIRST LIGHT',
-      line: 'RING 5 / 6  ·  THEN LAND',
+      title: 'MISSION 1 · FIRST LIGHT',
+      line: 'RING 4/6 - THEN LAND\nAT HARBOUR FIELD',
       timer: '02:46',
     };
   }
