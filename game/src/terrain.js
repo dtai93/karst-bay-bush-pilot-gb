@@ -2,6 +2,7 @@
 
 import * as THREE from '../vendor/three.module.min.js';
 import { FIELDS, TOWERS, WORLD, fieldAt, islandHeight } from './config.js';
+import { createKarstTowers } from './karst-towers.js';
 
 function visualHeight(x, z) {
   let h = islandHeight(x, z);
@@ -75,49 +76,9 @@ function buildLand() {
   return mesh;
 }
 
-function buildTowers() {
-  const group = new THREE.Group();
-  const rock = new THREE.MeshStandardMaterial({ color: 0xc6b59a, roughness: 0.94 });
-  const rockDark = new THREE.MeshStandardMaterial({ color: 0x9a8b74, roughness: 0.95 });
-  const jungle = new THREE.MeshStandardMaterial({ color: 0x1c6a34, roughness: 0.88 });
-  const canopy = new THREE.MeshStandardMaterial({ color: 0x145028, roughness: 0.9 });
-  for (let i = 0; i < TOWERS.length; i += 1) {
-    const tower = TOWERS[i];
-    const trunk = new THREE.Mesh(
-      new THREE.CylinderGeometry(tower.r * 0.74, tower.r * 1.04, tower.h, 9),
-      i % 2 ? rock : rockDark,
-    );
-    trunk.position.set(tower.x, tower.h * 0.5 - 1, tower.z);
-    group.add(trunk);
-    const lip = new THREE.Mesh(
-      new THREE.CylinderGeometry(tower.r * 0.92, tower.r * 0.7, tower.h * 0.08, 9),
-      rock,
-    );
-    lip.position.set(tower.x, tower.h * 0.72, tower.z);
-    group.add(lip);
-    const cap = new THREE.Mesh(
-      new THREE.CylinderGeometry(tower.r * 0.7, tower.r * 0.62, 9, 8),
-      jungle,
-    );
-    cap.position.set(tower.x, tower.h + 2.5, tower.z);
-    group.add(cap);
-    for (let tree = 0; tree < 4; tree += 1) {
-      const angle = (tree / 4) * Math.PI * 2 + i;
-      const cone = new THREE.Mesh(new THREE.ConeGeometry(tower.r * 0.16, 14, 6), canopy);
-      cone.position.set(
-        tower.x + Math.cos(angle) * tower.r * 0.35,
-        tower.h + 10,
-        tower.z + Math.sin(angle) * tower.r * 0.35,
-      );
-      group.add(cone);
-    }
-  }
-  return group;
-}
-
 export function createTerrain() {
   const group = new THREE.Group();
   group.add(buildLand());
-  group.add(buildTowers());
+  group.add(createKarstTowers());
   return group;
 }

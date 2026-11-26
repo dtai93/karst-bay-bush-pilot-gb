@@ -97,16 +97,36 @@ export const FIRST_LIGHT_RINGS = [
 ];
 
 export const TOWERS = [
-  { x: -250, z: 170, r: 48, h: 155 },
-  { x: -530, z: -50, r: 60, h: 215 },
-  { x: -170, z: -690, r: 42, h: 128 },
-  { x: 410, z: -310, r: 64, h: 236 },
-  { x: 270, z: 210, r: 38, h: 102 },
-  { x: 640, z: -90, r: 52, h: 176 },
-  { x: -70, z: -1040, r: 46, h: 148 },
-  { x: 180, z: -1180, r: 72, h: 268 },
-  { x: 920, z: 390, r: 50, h: 136 },
-  { x: -980, z: 380, r: 58, h: 188 },
+  { x: -250, z: 170, r: 48, h: 155, leanX: -8, leanZ: 5, seed: 1 },
+  { x: -530, z: -50, r: 60, h: 215, leanX: 9, leanZ: -5, seed: 2 },
+  { x: -170, z: -690, r: 42, h: 128, leanX: -4, leanZ: -6, seed: 3 },
+  { x: 410, z: -310, r: 64, h: 236, leanX: 7, leanZ: 8, seed: 4 },
+  { x: 270, z: 210, r: 38, h: 102, leanX: 4, leanZ: -3, seed: 5 },
+  { x: 640, z: -90, r: 52, h: 176, leanX: -8, leanZ: 6, seed: 6 },
+  { x: -70, z: -1040, r: 46, h: 148, leanX: 3, leanZ: -8, seed: 7 },
+  { x: 180, z: -1180, r: 72, h: 268, leanX: -11, leanZ: 8, seed: 8 },
+  { x: 920, z: 390, r: 50, h: 136, leanX: 5, leanZ: 4, seed: 9 },
+  { x: -980, z: 380, r: 58, h: 188, leanX: -6, leanZ: 9, seed: 10 },
+  { x: -1460, z: -250, r: 58, h: 205, leanX: 9, leanZ: -4, seed: 11 },
+  { x: -1270, z: 180, r: 41, h: 112, leanX: -3, leanZ: 7, seed: 12 },
+  { x: -1810, z: 240, r: 74, h: 278, leanX: 12, leanZ: -8, seed: 13 },
+  { x: -2080, z: -430, r: 46, h: 146, leanX: -5, leanZ: 5, seed: 14 },
+  { x: -1590, z: -820, r: 52, h: 169, leanX: 7, leanZ: 2, seed: 15 },
+  { x: -1120, z: -1130, r: 78, h: 310, leanX: -9, leanZ: -12, seed: 16 },
+  { x: -650, z: -1550, r: 50, h: 162, leanX: 6, leanZ: 7, seed: 17 },
+  { x: -170, z: -1680, r: 62, h: 226, leanX: -8, leanZ: 10, seed: 18 },
+  { x: 370, z: -1640, r: 43, h: 131, leanX: 5, leanZ: -6, seed: 19 },
+  { x: 830, z: -1430, r: 68, h: 252, leanX: -12, leanZ: 5, seed: 20 },
+  { x: 1230, z: -1100, r: 48, h: 153, leanX: 4, leanZ: 8, seed: 21 },
+  { x: 1540, z: -640, r: 76, h: 298, leanX: -10, leanZ: -9, seed: 22 },
+  { x: 1790, z: -160, r: 44, h: 137, leanX: 8, leanZ: 4, seed: 23 },
+  { x: 1470, z: 330, r: 58, h: 184, leanX: -7, leanZ: 6, seed: 24 },
+  { x: 1240, z: 830, r: 70, h: 264, leanX: 10, leanZ: -8, seed: 25 },
+  { x: 730, z: 1110, r: 46, h: 144, leanX: -5, leanZ: -3, seed: 26 },
+  { x: 210, z: 1040, r: 60, h: 198, leanX: 9, leanZ: 7, seed: 27 },
+  { x: -330, z: 920, r: 48, h: 158, leanX: -6, leanZ: 5, seed: 28 },
+  { x: -830, z: 1010, r: 72, h: 286, leanX: 11, leanZ: -5, seed: 29 },
+  { x: -1280, z: 790, r: 44, h: 139, leanX: -4, leanZ: -7, seed: 30 },
 ];
 
 export const VILLAGE = { x: 168, z: -90 };
@@ -172,14 +192,27 @@ export function islandHeight(x, z) {
   return h;
 }
 
+export function towerRadiusAt(tower, y, angle) {
+  const u = Math.max(0, Math.min(1, y / tower.h));
+  const seed = tower.seed ?? 1;
+  const taper = 0.96 - 0.26 * u + 0.12 * Math.sin((u * 2.3 + 0.08) * Math.PI);
+  const waist = 1 - 0.13 * Math.exp(-((u - 0.52) ** 2) / 0.018);
+  const irregular = 1 + 0.17 * Math.sin(angle * 3 + seed * 1.7 + u * 3) + 0.09 * Math.sin(angle * 7 - seed + u * 9);
+  const topRag = u > 0.72 ? 1 + 0.19 * Math.sin(angle * 5 + seed) + 0.09 * Math.sin(angle * 9 - seed * 2) : 1;
+  return Math.max(tower.r * 0.38, tower.r * taper * waist * irregular * topRag);
+}
+
 function towerColumn(x, z, tower) {
-  const d = Math.hypot(x - tower.x, z - tower.z);
-  const foot = tower.r * 1.28;
-  if (d >= foot) return 0;
-  const crown = tower.r * 0.78;
-  if (d <= crown) return tower.h;
-  const u = (foot - d) / (foot - crown);
-  return tower.h * u * u;
+  const leanX = tower.leanX ?? 0;
+  const leanZ = tower.leanZ ?? 0;
+  for (let band = 48; band >= 0; band -= 1) {
+    const y = tower.h * band / 48;
+    const dx = x - tower.x - leanX * (y / tower.h);
+    const dz = z - tower.z - leanZ * (y / tower.h);
+    const angle = Math.atan2(dz, dx);
+    if (Math.hypot(dx, dz) <= towerRadiusAt(tower, y, angle)) return y;
+  }
+  return 0;
 }
 
 function insideField(x, z, field, pad) {

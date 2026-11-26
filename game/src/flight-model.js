@@ -4,7 +4,6 @@
 import {
   AERO,
   SPAWN,
-  TOWERS,
   WORLD,
   UNITS,
   clamp,
@@ -12,6 +11,7 @@ import {
   formatHdg,
   headingDeg,
   heightAt,
+  islandHeight,
   wrapPi,
 } from './config.js';
 import { availablePower, burnFuel, recordDamage } from './fuel-and-damage.js';
@@ -184,7 +184,7 @@ export function stepFlight(plane, controls, dt) {
     plane.crashed = true;
     plane.onGround = true;
     recordDamage(plane, 1);
-    const tower = TOWERS.some((item) => Math.hypot(plane.x - item.x, plane.z - item.z) < item.r * 1.28);
+    const tower = heightAt(plane.x, plane.z) > islandHeight(plane.x, plane.z);
     plane.crashReason = wet ? 'WATER DITCH'
       : tower ? 'WING STRUCK TOWER'
         : bank > AERO.crashBank ? 'WING STRIKE' : 'HARD LANDING';
