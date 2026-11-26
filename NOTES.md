@@ -22,3 +22,10 @@ The debrief now uses a prominent landing-grade badge, unit-labelled metrics, obj
 Replaced all four images with fresh 1024x640 game renders and inspected each; all JPEGs are under 256 KiB.
 README controls now include mouse-wheel throttle and mute, alongside the full mission list and local run commands.
 Verified every game module parses and `main.ts` emits a byte-stable dossier, game index, and four output screenshots.
+
+Phase 4 final review: inspected all four existing screenshots at full size; the cockpit, five-flight board, and landing debrief read clearly.
+The cover remains the weakest scene because its broad wing partly obscures the aircraft; Chrome's DevTools endpoint failed on both capture attempts.
+Reverted the unverified camera/shot tweak so the game source remains consistent with the checked-in renders.
+Confirmed all 23 game modules pass `node --check`, no "Block Dodger" text remains, and all four JPEGs are 1024x640 and below 256 KiB.
+Ran `main.ts` twice into `out/`; both dossier files had the same SHA-256, with the game index and four screenshots present.
+Verified the README badges/footer, MIT SPDX and copyright, and unchanged vendor/owner files.
