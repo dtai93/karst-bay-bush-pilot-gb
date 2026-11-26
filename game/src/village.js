@@ -1,7 +1,7 @@
 // Stilt houses, sail boats and the bay lighthouse.
 
 import * as THREE from '../vendor/three.module.min.js';
-import { LIGHTHOUSE, VILLAGE, islandHeight } from './config.js';
+import { LIGHTHOUSE, RESCUE_BOAT, VILLAGE, islandHeight } from './config.js';
 
 function house(group, x, z, wood, roof, warm) {
   const floor = islandHeight(x, z);
@@ -75,6 +75,19 @@ export function createVillage() {
   boat(group, VILLAGE.x + 16, VILLAGE.z + 18, hull, sail);
   boat(group, VILLAGE.x + 22, VILLAGE.z + 6, hull, sail);
   boat(group, VILLAGE.x - 18, VILLAGE.z + 22, hull, sail);
+  boat(group, RESCUE_BOAT.x, RESCUE_BOAT.z, hull, new THREE.MeshStandardMaterial({ color: 0xf17b42, roughness: 0.6 }));
+  const flare = new THREE.Mesh(
+    new THREE.SphereGeometry(1.2, 8, 6),
+    new THREE.MeshBasicMaterial({ color: 0xff6138 }),
+  );
+  flare.position.set(RESCUE_BOAT.x, 8, RESCUE_BOAT.z);
+  group.add(flare);
+  const beam = new THREE.Mesh(
+    new THREE.ConeGeometry(7, 42, 8, 1, true),
+    new THREE.MeshBasicMaterial({ color: 0xff8a55, transparent: true, opacity: 0.2, side: THREE.DoubleSide }),
+  );
+  beam.position.set(RESCUE_BOAT.x, 25, RESCUE_BOAT.z);
+  group.add(beam);
 
   const base = islandHeight(LIGHTHOUSE.x, LIGHTHOUSE.z);
   const white = new THREE.MeshStandardMaterial({ color: 0xf4f0e6, roughness: 0.45 });

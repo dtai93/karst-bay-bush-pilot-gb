@@ -111,6 +111,7 @@ export const TOWERS = [
 
 export const VILLAGE = { x: 168, z: -90 };
 export const LIGHTHOUSE = { x: -158, z: -8 };
+export const RESCUE_BOAT = { x: -332, z: 132 };
 
 export const LIVERY = {
   cream: 0xf4e4c8,

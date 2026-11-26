@@ -14,7 +14,10 @@ import { collectRing, createRings, updateRings } from './rings.js';
 import { createCameraRig, easeLook, nudgeLook, setCameraMode, updateCameraRig } from './camera-rig.js';
 import { drawHud } from './hud.js';
 import { drawScreen } from './screens.js';
-import { createMissionState, advanceMission } from './mission-runner.js';
+import { createMissionState, advanceMission, missionObjective } from './mission-runner.js';
+import { MISSIONS } from './missions.js';
+import { sampleWeather } from './weather.js';
+import { buyUpgrade, creditMission, loadHangar, upgradeEffects } from './hangar-upgrades.js';
 import { createRng } from './random.js';
 import { stageShot } from './shots.js';
 
@@ -43,7 +46,8 @@ const params = new URLSearchParams(window.location.search);
 const shotName = params.get('shot');
 const seed = Number(params.get('seed') || '1') || 1;
 
-function freshFlight() {
+function freshFlight(hangar, missionId) {
+  const upgrades = upgradeEffects(hangar);
   return createFlight({
     x: 0,
     y: 4.78,
@@ -54,14 +58,16 @@ function freshFlight() {
     speed: 0,
     throttle: 0.18,
     onGround: true,
-    fuel: 0.86,
+    fuel: missionId === 'squall-line' ? 0.34 : upgrades.fuel,
     damage: 0,
   });
 }
-
 const session = {
-  flight: freshFlight(),
+  hangar: loadHangar(),
+  flight: null,
   mission: createMissionState(),
+  selectedMission: 1,
+  rewardPaid: false,
   screen: 'title',
   rings,
   camera: createCameraRig(1.6),
@@ -76,29 +82,25 @@ const session = {
     timer: '06:00',
   },
   step(dt, controls) {
-    stepFlight(this.flight, controls, dt);
+    const weather = sampleWeather(this.mission.id, this.time);
+    const upgrades = upgradeEffects(this.hangar);
+    stepFlight(this.flight, {
+      ...controls, windX: weather.x, windZ: weather.z, payload: this.mission.cargo,
+      engineBonus: upgrades.engineBonus, gearBonus: upgrades.gearBonus,
+    }, dt);
     const collected = collectRing(this.rings, this.flight);
-    advanceMission(this.mission, this.flight, this.rings.index, collected);
-    if (this.mission.status === 'crashed' || this.mission.status === 'complete') this.screen = 'debrief';
+    advanceMission(this.mission, this.flight, this.rings.index, collected, controls);
+    if (this.flight.crashed) this.mission.crashReason = this.flight.crashReason;
+    if (this.mission.status === 'complete' && !this.rewardPaid) {
+      creditMission(this.hangar, this.mission.pay, this.mission.id, this.mission.stars);
+      this.rewardPaid = true;
+    }
+    if (['crashed', 'complete', 'landed', 'expired'].includes(this.mission.status)) this.screen = 'debrief';
     this.time += dt;
-    if (!this.scripted) this.writeObjective();
-  },
-  writeObjective() {
-    const left = Math.max(0, 360 - this.time);
-    const minutes = Math.floor(left / 60);
-    const seconds = Math.floor(left % 60);
-    const next = Math.min(this.rings.index + 1, this.rings.list.length);
-    const finished = this.rings.index >= this.rings.list.length;
-    const timer = `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
-    this.objective = {
-      title: 'FIRST LIGHT',
-      line: this.mission.status === 'crashed'
-        ? `AIRCRAFT DOWN  ·  ${this.flight.crashReason}`
-        : finished ? 'LAND AT HARBOUR FIELD' : `RING ${next} / 6  ·  FLY THROUGH`,
-      timer,
-    };
+    if (!this.scripted) this.objective = missionObjective(this.mission, 360 - this.time);
   },
 };
+session.flight = freshFlight(session.hangar);
 
 function fit() {
   const width = window.innerWidth || 1024;
@@ -115,15 +117,16 @@ window.addEventListener('resize', fit);
 
 const input = createInput(viewCanvas);
 
-function resetSortie() {
-  session.flight = freshFlight();
-  session.mission = createMissionState();
+function resetSortie(id = MISSIONS[session.selectedMission - 1].id) {
+  session.flight = freshFlight(session.hangar, id);
+  session.mission = createMissionState(id);
+  session.rewardPaid = false;
   session.time = 0;
   session.paused = false;
   session.rings.index = 0;
   for (let i = 0; i < session.rings.list.length; i += 1) session.rings.list[i].taken = false;
   session.camera.ready = false;
-  if (!session.scripted) session.writeObjective();
+  if (!session.scripted) session.objective = missionObjective(session.mission, 360);
 }
 
 if (shotName) stageShot(shotName, session);
@@ -141,12 +144,22 @@ function frame(now) {
       setCameraMode(session.camera, session.camera.mode === 'chase' ? 'cockpit' : 'chase');
     }
     if (sample.pause && session.screen === 'flight') session.paused = !session.paused;
-    if (sample.start && session.screen === 'title') {
-      resetSortie();
+    if (sample.selectMission) {
+      session.selectedMission = sample.selectMission;
+      if (session.screen === 'debrief') session.screen = 'title';
+    }
+    if (sample.hangar && session.screen !== 'flight') session.screen = session.screen === 'hangar' ? 'title' : 'hangar';
+    if (session.screen === 'hangar') {
+      if (sample.buyTank) buyUpgrade(session.hangar, 'tank');
+      if (sample.buyEngine) buyUpgrade(session.hangar, 'engine');
+      if (sample.buyGear) buyUpgrade(session.hangar, 'gear');
+    }
+    if (sample.start && ['title', 'missions', 'debrief', 'hangar'].includes(session.screen)) {
+      resetSortie(MISSIONS[session.selectedMission - 1].id);
       session.screen = 'flight';
     }
     if (sample.restart && session.screen !== 'title') {
-      resetSortie();
+      resetSortie(MISSIONS[session.selectedMission - 1].id);
       session.screen = 'flight';
     }
     nudgeLook(session.camera, sample.lookX, sample.lookY);
@@ -167,14 +180,21 @@ function frame(now) {
   updateWater(water, session.time, session.frozen);
   updateCameraRig(session.camera, session.flight, session.frozen ? 0.5 : elapsed);
   renderer.render(scene, session.camera.camera);
+  const weather = sampleWeather(session.mission.id, session.time);
   drawHud(hudCanvas, {
     readout: readout(session.flight),
     objective: session.objective,
     rings: session.rings,
     paused: session.paused,
     cockpit: session.camera.mode === 'cockpit',
+    weather,
   });
-  drawScreen(hudCanvas, session.screen, session.mission);
+  session.mission.stats = {
+    fuel: Math.round(session.flight.fuel * 100),
+    damage: Math.round(session.flight.damage * 100),
+    elapsed: Math.floor(session.time),
+  };
+  drawScreen(hudCanvas, session.screen, session.mission, session.selectedMission, session.hangar);
   statusClock += elapsed;
   if (status && statusClock > 0.5) {
     statusClock = 0;

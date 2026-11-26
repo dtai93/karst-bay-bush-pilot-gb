@@ -4,15 +4,15 @@
 [![rank](https://make.fun/badge/best-flight-game-20261126-0057/dtai93/karst-bay-bush-pilot-gb/rank.svg)](https://make.fun/bounty/best-flight-game-20261126-0057/leaderboard?utm_source=github&utm_medium=readme&utm_campaign=best-flight-game-20261126-0057)
 [![reward](https://make.fun/badge/best-flight-game-20261126-0057/dtai93/karst-bay-bush-pilot-gb/reward.svg)](https://make.fun/bounty/best-flight-game-20261126-0057?utm_source=github&utm_medium=readme&utm_campaign=best-flight-game-20261126-0057)
 
-Limestone Wings is a low-altitude bush-flying game over a warm, original karst bay. Pilot the Kestrel K-2 through glowing route rings, watch the runway and instruments, and manage speed, fuel, and a careful landing.
+Limestone Wings is a low-altitude bush-flying game over a warm, original karst bay, flown in the red-and-cream Kestrel K-2. Five sorties span tower-ring navigation, a weighted ice delivery, rooftop mail drops, a rain-swept crosswind landing, and a flare-boat rescue. Fuel, damage, touchdown quality, and mission pay carry consequences between flights.
 
 ## Controls
 
-W/S pitch, A/D roll, Q/E rudder, Shift/Ctrl throttle, F flaps, G brakes, C chase/cockpit view, mouse drag look, P pause, and R restart.
+Press 1–5 to choose a mission and Enter to launch. W/S pitch, A/D roll, Q/E rudder, Shift/Ctrl throttle, F flaps, G brakes, C chase/cockpit view, mouse drag look, P pause, Space drops mail, H opens the hangar, and R restarts.
 
 ## Missions
 
-First Light asks you to fly six target rings around the towers, then return to Harbour Field. The route and landing approach are shown on the HUD.
+First Light asks you to fly six target rings and return to Harbour Field. Ice for the Market carries heavy fish ice to Terrace Strip before it melts; Mail Drop rewards accurate rooftop deliveries. Squall Line challenges a low-fuel landing at Lagoon Strip in rain and crosswind, while Lighthouse Rescue asks you to circle the flare boat before returning to Harbour Field. Successful landings pay for tank, engine, and gear upgrades in the hangar.
 
 ## Run it
 

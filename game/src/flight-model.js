@@ -4,6 +4,7 @@
 import {
   AERO,
   SPAWN,
+  TOWERS,
   WORLD,
   UNITS,
   clamp,
@@ -13,6 +14,7 @@ import {
   heightAt,
   wrapPi,
 } from './config.js';
+import { availablePower, burnFuel, recordDamage } from './fuel-and-damage.js';
 
 export function createFlight(over) {
   const spec = over ?? {};
@@ -71,10 +73,9 @@ export function stepFlight(plane, controls, dt) {
   if (controls.flap) plane.flaps = (plane.flaps + 1) % 3;
   plane.brake = !!controls.brake;
 
-  const alive = plane.fuel > 0.008;
-  const power = plane.throttle * (1 - plane.damage * 0.42) * (alive ? 1 : 0);
+  burnFuel(plane, dt);
+  const power = availablePower(plane, controls.engineBonus ?? 0);
   plane.rpm += (power - plane.rpm) * Math.min(1, dt * 2.4);
-  if (alive) plane.fuel = Math.max(0, plane.fuel - plane.throttle * AERO.fuelBurn * dt);
 
   const ground = heightAt(plane.x, plane.z);
   const watery = ground < 0.7 && !fieldAt(plane.x, plane.z);
@@ -133,7 +134,8 @@ export function stepFlight(plane, controls, dt) {
   let cl = clamp(aoa * AERO.clAoa + AERO.clBase, -0.4, AERO.clMax + plane.flaps * AERO.flapLift);
   if (stalling) cl *= (horiz / AERO.stall) ** 2;
 
-  const lift = cl * AERO.liftK * horiz * horiz;
+  const payload = clamp(controls.payload ?? 0, 0, 300);
+  const lift = cl * AERO.liftK * horiz * horiz / (1 + payload / AERO.mass);
   const nose = axes(plane.yaw, plane.pitch);
   const rightX = Math.cos(plane.yaw);
   const rightZ = Math.sin(plane.yaw);
@@ -153,6 +155,8 @@ export function stepFlight(plane, controls, dt) {
   plane.vx = clamp(plane.vx + ax * dt, -120, 120);
   plane.vy = clamp(plane.vy + ay * dt, -80, 40);
   plane.vz = clamp(plane.vz + az * dt, -120, 120);
+  plane.vx += (controls.windX ?? 0) * dt;
+  plane.vz += (controls.windZ ?? 0) * dt;
   plane.x += plane.vx * dt;
   plane.y += plane.vy * dt;
   plane.z += plane.vz * dt;
@@ -175,16 +179,20 @@ export function stepFlight(plane, controls, dt) {
   plane.y = deck;
   plane.vy = 0;
 
-  if (wet || sink > AERO.crashSink || bank > AERO.crashBank) {
+  const gearBonus = controls.gearBonus ?? 0;
+  if (wet || sink > AERO.crashSink + gearBonus * 2 || bank > AERO.crashBank + gearBonus * 0.35) {
     plane.crashed = true;
     plane.onGround = true;
-    plane.damage = 1;
-    plane.crashReason = wet ? 'DITCHED' : bank > AERO.crashBank ? 'WING STRIKE' : 'HARD LANDING';
+    recordDamage(plane, 1);
+    const tower = TOWERS.some((item) => Math.hypot(plane.x - item.x, plane.z - item.z) < item.r * 1.28);
+    plane.crashReason = wet ? 'WATER DITCH'
+      : tower ? 'WING STRUCK TOWER'
+        : bank > AERO.crashBank ? 'WING STRIKE' : 'HARD LANDING';
     return plane;
   }
 
   if (sink > AERO.hardSink) {
-    plane.damage = clamp(plane.damage + (sink - AERO.hardSink) * 0.04, 0, 1);
+    recordDamage(plane, (sink - AERO.hardSink) * 0.04);
   }
   plane.onGround = true;
   const gs = Math.hypot(plane.vx, plane.vz);

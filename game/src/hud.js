@@ -285,6 +285,22 @@ function keys(ctx, width, height) {
   );
 }
 
+function weatherBadge(ctx, weather) {
+  if (!weather || weather.rain <= 0) return;
+  panel(ctx, 650, 78, 224, 40);
+  label(ctx, 'SQUALL  ·  CROSSWIND  ·  RAIN', 762, 98, 12, '#aee8ef', 'center');
+  ctx.strokeStyle = `rgba(185, 225, 238, ${0.22 + weather.rain * 0.25})`;
+  ctx.lineWidth = 1;
+  for (let i = 0; i < 36; i += 1) {
+    const x = ((i * 83 + 29 - Math.floor(weather.time * 45)) % 1024 + 1024) % 1024;
+    const y = (i * 47 + 17 + Math.floor(weather.time * 110)) % 610;
+    ctx.beginPath();
+    ctx.moveTo(x, y);
+    ctx.lineTo(x - 7, y + 18);
+    ctx.stroke();
+  }
+}
+
 export function drawHud(canvas, view) {
   const ctx = canvas.getContext('2d');
   const width = canvas.width;
@@ -297,6 +313,7 @@ export function drawHud(canvas, view) {
   const plane = view.readout;
   const objective = view.objective;
 
+  weatherBadge(ctx, view.weather);
   headingRibbon(ctx, 190, 8, 644, 58, plane.hdg);
   verticalTape(ctx, 14, 78, 112, 400, plane.kts, 80, 10, 'KTS', 'AIRSPEED');
   verticalTape(ctx, 898, 78, 112, 400, plane.altFt, 500, 50, 'ALT', 'FEET');

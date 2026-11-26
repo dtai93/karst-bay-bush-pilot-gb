@@ -92,6 +92,12 @@ export function createInput(canvas) {
         mute: takeEdge('KeyM'),
         restart: takeEdge('KeyR'),
         start: takeEdge('Enter'),
+        selectMission: [1, 2, 3, 4, 5].find((number) => takeEdge(`Digit${number}`)) || 0,
+        drop: takeEdge('Space'),
+        hangar: takeEdge('KeyH'),
+        buyTank: takeEdge('KeyT'),
+        buyEngine: takeEdge('KeyE'),
+        buyGear: takeEdge('KeyU'),
         lookX,
         lookY,
       };

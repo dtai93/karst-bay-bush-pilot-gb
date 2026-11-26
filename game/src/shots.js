@@ -1,7 +1,8 @@
 // Deterministic scenes for ?shot=name&seed=1. The real flight model runs a
 // fixed number of steps under a simple autopilot, then the picture freezes.
 
-import { FIRST_LIGHT_RINGS, STEP, clamp, wrapPi } from './config.js';
+import { FIRST_LIGHT_RINGS, HARBOUR, STEP, WORLD, clamp, wrapPi } from './config.js';
+import { createMissionState } from './mission-runner.js';
 
 const COVER_RING = 4;
 
@@ -49,6 +50,32 @@ function placeCover(session) {
   session.scripted = true;
 }
 
+function placeFinal(session) {
+  const plane = session.flight;
+  plane.x = HARBOUR.x;
+  plane.y = 49;
+  plane.z = 105;
+  plane.yaw = HARBOUR.heading;
+  plane.pitch = -0.035;
+  plane.roll = 0.015;
+  plane.vx = 0;
+  plane.vy = -1.3;
+  plane.vz = -38;
+  plane.throttle = 0.57;
+  plane.rpm = 0.62;
+  plane.fuel = 0.34;
+  plane.damage = 0.04;
+  plane.flaps = 2;
+  plane.onGround = false;
+  plane.crashed = false;
+  plane.crashReason = '';
+  session.camera.mode = 'cockpit';
+  session.camera.lookYaw = 0;
+  session.camera.lookPitch = 0;
+  session.camera.ready = false;
+  session.scripted = true;
+}
+
 function pinApproach(session) {
   session.rings.index = COVER_RING;
   for (let i = 0; i < session.rings.list.length; i += 1) {
@@ -67,15 +94,41 @@ export function stageShot(name, session) {
   session.screen = 'flight';
   placeCover(session);
   if (shot === 'cockpit') {
-    session.camera.mode = 'cockpit';
-    flyToward(session, 74, FIRST_LIGHT_RINGS[COVER_RING], 58);
-    session.objective = { title: 'FIRST LIGHT', line: 'RING 5 / 6  ·  FLY THROUGH', timer: '02:31' };
+    placeFinal(session);
+    flyToward(session, 36, { x: HARBOUR.x, z: HARBOUR.z }, 40);
+    session.objective = { title: 'FIRST LIGHT', line: 'HARBOUR FIELD · FINAL 0.4 NM', timer: '00:42' };
   } else if (shot === 'missions') {
     flyToward(session, 50, FIRST_LIGHT_RINGS[COVER_RING], 56);
-    session.objective = { title: 'FIRST LIGHT', line: 'SIX RINGS  ·  HARBOUR FIELD', timer: '04:18' };
+    session.mission = createMissionState('ice-market');
+    session.selectedMission = 2;
+    session.screen = 'missions';
   } else if (shot === 'debrief') {
-    flyToward(session, 50, FIRST_LIGHT_RINGS[COVER_RING], 56);
-    session.objective = { title: 'FIRST LIGHT', line: 'HARBOUR FIELD  ·  FINAL APPROACH', timer: '00:42' };
+    placeFinal(session);
+    flyToward(session, 30, { x: HARBOUR.x, z: HARBOUR.z }, 28);
+    session.flight.x = HARBOUR.x + 4;
+    session.flight.y = HARBOUR.elevation + WORLD.gear;
+    session.flight.z = HARBOUR.z;
+    session.flight.yaw = -0.25;
+    session.flight.pitch = 0;
+    session.flight.roll = 0;
+    session.flight.vx = 0;
+    session.flight.vy = 0;
+    session.flight.vz = 0;
+    session.flight.fuel = 0.11;
+    session.flight.onGround = true;
+    session.camera.mode = 'chase';
+    session.camera.lookYaw = -0.3;
+    session.camera.ready = false;
+    session.time = 271;
+    session.mission = createMissionState('first-light');
+    session.mission.status = 'complete';
+    session.mission.rings = 6;
+    session.mission.landing = { grade: 'A', fpm: 142, offset: 4, zone: 86, score: 94 };
+    session.mission.score = 694;
+    session.mission.stars = 3;
+    session.mission.pay = 226;
+    session.mission.stats = { fuel: 11, damage: 4, elapsed: 271 };
+    session.screen = 'debrief';
   } else {
     flyToward(session, 50, FIRST_LIGHT_RINGS[COVER_RING], 56);
     pinApproach(session);
