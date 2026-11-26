@@ -36,3 +36,12 @@ Ran `node --check` across all game source modules; all parsed successfully.
 Ran the output build twice and confirmed identical dossier SHA-256 hashes.
 Confirmed the output contains 25 game files and exactly four JPEG screenshots, each below 256 KiB.
 No reproducible packaging defect was found, so game source and generated screenshots were left unchanged.
+
+V2 phase 1: replaced smooth columns with 30 seeded irregular limestone towers and a matching collision height profile.
+Tower crowns now use clustered low-poly foliage, with ledges and shaded rock bands.
+Terrain adds faceted height colors, seeded instanced groves, and a blue-violet low-poly mountain horizon.
+The bay water now blends deeper emerald with broad turquoise shallows, tower foam, ripples, and restrained sun glints.
+The sky stages 30 low-poly cloud clusters around a low golden sun.
+The stilt village now has a denser orange-red roof cluster and two white triangular sails on each boat.
+Harbour threshold keys, runway numerals, centerline dashes, edge lights, and PAPI cues are larger.
+Rendered and inspected the 1024x640 cover after each world milestone; changed source modules parse successfully.

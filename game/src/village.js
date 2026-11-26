@@ -3,7 +3,7 @@
 import * as THREE from '../vendor/three.module.min.js';
 import { LIGHTHOUSE, RESCUE_BOAT, VILLAGE, islandHeight } from './config.js';
 
-function house(group, x, z, wood, roof, warm) {
+function house(group, x, z, wood, roof) {
   const floor = islandHeight(x, z);
   const base = Math.max(floor, 0.4);
   for (const corner of [[-1.6, -1.2], [1.6, -1.2], [-1.6, 1.2], [1.6, 1.2]]) {
@@ -17,8 +17,8 @@ function house(group, x, z, wood, roof, warm) {
   const wall = new THREE.Mesh(new THREE.BoxGeometry(4.2, 2.1, 3.1), wood);
   wall.position.set(x, base + 4.4, z);
   group.add(wall);
-  const cap = new THREE.Mesh(new THREE.ConeGeometry(3.3, 1.5, 4), roof);
-  cap.position.set(x, base + 6.1, z);
+  const cap = new THREE.Mesh(new THREE.ConeGeometry(3.8, 1.8, 4), roof);
+  cap.position.set(x, base + 6.25, z);
   cap.rotation.y = Math.PI / 4;
   group.add(cap);
   const window = new THREE.Mesh(
@@ -27,7 +27,6 @@ function house(group, x, z, wood, roof, warm) {
   );
   window.position.set(x, base + 4.5, z + 1.56);
   group.add(window);
-  warm.position && null;
 }
 
 function boat(group, x, z, hull, sail) {
@@ -40,31 +39,46 @@ function boat(group, x, z, hull, sail) {
   );
   mast.position.set(x, 2.1, z);
   group.add(mast);
-  const cloth = new THREE.Mesh(new THREE.ConeGeometry(0.9, 2.6, 4), sail);
-  cloth.position.set(x + 0.35, 2.3, z + 0.2);
-  cloth.scale.set(0.35, 1, 1);
-  group.add(cloth);
+  const makeSail = (width, height) => {
+    const shape = new THREE.Shape();
+    shape.moveTo(0, -height * 0.5);
+    shape.lineTo(width, height * 0.25);
+    shape.lineTo(0, height * 0.5);
+    shape.closePath();
+    return new THREE.Mesh(new THREE.ShapeGeometry(shape), sail);
+  };
+  const mainsail = makeSail(1.05, 2.5);
+  mainsail.position.set(x + 0.55, 2.35, z + 0.04);
+  group.add(mainsail);
+  const foresail = makeSail(-0.7, 1.55);
+  foresail.position.set(x - 0.45, 1.95, z - 0.25);
+  group.add(foresail);
 }
 
 export function createVillage() {
   const group = new THREE.Group();
   const wood = new THREE.MeshStandardMaterial({ color: 0xc48a48, roughness: 0.82 });
   const woodDark = new THREE.MeshStandardMaterial({ color: 0x8d5a30, roughness: 0.84 });
-  const roof = new THREE.MeshStandardMaterial({ color: 0xa33b32, roughness: 0.7 });
-  const roof2 = new THREE.MeshStandardMaterial({ color: 0x3d5c6e, roughness: 0.7 });
+  const roof = new THREE.MeshStandardMaterial({ color: 0xb63c2b, roughness: 0.7 });
+  const roofOrange = new THREE.MeshStandardMaterial({ color: 0xd46732, roughness: 0.72 });
+  const roofGold = new THREE.MeshStandardMaterial({ color: 0xc6532f, roughness: 0.72 });
   const hull = new THREE.MeshStandardMaterial({ color: 0x6b3e28, roughness: 0.78 });
-  const sail = new THREE.MeshStandardMaterial({ color: 0xf3ead6, roughness: 0.55 });
+  const sail = new THREE.MeshStandardMaterial({ color: 0xfff7e8, roughness: 0.55, side: THREE.DoubleSide });
 
   const homes = [
     [0, 0, wood, roof],
-    [7.5, 2.5, woodDark, roof2],
-    [-6.5, 3, wood, roof],
-    [3, -6, woodDark, roof],
-    [-2, 8, wood, roof2],
+    [8, 3, woodDark, roofOrange],
+    [-7, 4, wood, roofGold],
+    [4, -7, woodDark, roof],
+    [-3, 9, wood, roofOrange],
+    [16, -5, woodDark, roofGold],
+    [-15, -7, wood, roof],
+    [12, 12, woodDark, roofOrange],
+    [-12, 13, wood, roofGold],
   ];
   for (let i = 0; i < homes.length; i += 1) {
     const home = homes[i];
-    house(group, VILLAGE.x + home[0], VILLAGE.z + home[1], home[2], home[3], {});
+    house(group, VILLAGE.x + home[0], VILLAGE.z + home[1], home[2], home[3]);
   }
 
   const jetty = new THREE.Mesh(new THREE.BoxGeometry(2.2, 0.2, 14), woodDark);

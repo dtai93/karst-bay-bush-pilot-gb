@@ -25,7 +25,7 @@ function paintedNumber(label) {
     transparent: true,
     depthWrite: false,
   });
-  return new THREE.Mesh(new THREE.PlaneGeometry(18, 22), material);
+  return new THREE.Mesh(new THREE.PlaneGeometry(23, 28), material);
 }
 
 function lamp(color, emissive) {
@@ -50,8 +50,8 @@ function buildStrip(field) {
   group.add(deck);
 
   const lineMat = new THREE.MeshBasicMaterial({ color: 0xf4f1ea });
-  for (let z = -half + 36; z < half - 30; z += 34) {
-    const dash = new THREE.Mesh(new THREE.BoxGeometry(0.85, 0.06, 14), lineMat);
+  for (let z = -half + 36; z < half - 30; z += 32) {
+    const dash = new THREE.Mesh(new THREE.BoxGeometry(1.15, 0.06, 15), lineMat);
     dash.position.set(0, 0.2, z);
     group.add(dash);
   }
@@ -73,7 +73,7 @@ function buildStrip(field) {
     group.add(north);
 
     for (let i = -3; i <= 3; i += 1) {
-      const bar = new THREE.Mesh(new THREE.BoxGeometry(1.5, 0.05, 18), lineMat);
+      const bar = new THREE.Mesh(new THREE.BoxGeometry(2.1, 0.05, 20), lineMat);
       bar.position.set(i * 3.2, 0.22, half - 16);
       group.add(bar);
       const far = bar.clone();
@@ -91,8 +91,8 @@ function buildStrip(field) {
     const papiColors = [0xff2a2a, 0xff2a2a, 0xfff6ea, 0xfff6ea];
     for (let i = 0; i < 4; i += 1) {
       const papi = new THREE.Mesh(
-        new THREE.BoxGeometry(1.3, 0.7, 1.3),
-        new THREE.MeshBasicMaterial({ color: papiColors[i] }),
+        new THREE.BoxGeometry(2.1, 1, 1.8),
+        new THREE.MeshBasicMaterial({ color: papiColors[i], toneMapped: false }),
       );
       papi.position.set(-field.width * 0.5 - 8, 1.1, half - 70 - i * 7);
       group.add(papi);
