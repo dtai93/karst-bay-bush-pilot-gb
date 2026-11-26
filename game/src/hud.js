@@ -1,309 +1,309 @@
-// Lit flight deck overlay: tapes, horizon, fuel, damage, objective, minimap.
+// Compact glass avionics overlay for chase and cockpit views.
 
 import { FIELDS, TOWERS, islandHeight, wrapPi } from './config.js';
 import { drawInstrumentPanel } from './instrument-panel.js';
 
-function roundRect(ctx, x, y, w, h, r) {
-  const radius = Math.min(r, w * 0.5, h * 0.5);
-  ctx.beginPath();
-  ctx.moveTo(x + radius, y);
-  ctx.arcTo(x + w, y, x + w, y + h, radius);
-  ctx.arcTo(x + w, y + h, x, y + h, radius);
-  ctx.arcTo(x, y + h, x, y, radius);
-  ctx.arcTo(x, y, x + w, y, radius);
-  ctx.closePath();
-}
+const CYAN = '#68e7f2';
+const AMBER = '#ffc768';
+const WHITE = '#f2fbff';
+const GLASS = 'rgba(8,14,24,0.45)';
 
-function panel(ctx, x, y, w, h) {
-  ctx.fillStyle = 'rgba(8, 12, 16, 0.8)';
-  roundRect(ctx, x, y, w, h, 8);
+function box(ctx, x, y, w, h, r = 7) {
+  const radius = Math.min(r, w * 0.5, h * 0.5);
+  ctx.fillStyle = GLASS;
+  ctx.strokeStyle = 'rgba(104,231,242,0.76)';
+  ctx.lineWidth = 1.25;
+  ctx.beginPath();
+  ctx.roundRect(x, y, w, h, radius);
   ctx.fill();
-  ctx.strokeStyle = 'rgba(255, 212, 138, 0.95)';
-  ctx.lineWidth = 2;
   ctx.stroke();
 }
 
-function label(ctx, text, x, y, size, color, align) {
-  ctx.fillStyle = color || '#fff6e4';
-  ctx.font = `800 ${size}px Arial, sans-serif`;
-  ctx.textAlign = align || 'left';
+function text(ctx, value, x, y, size = 14, color = WHITE, align = 'left', weight = 700) {
+  ctx.fillStyle = color;
+  ctx.font = `${weight} ${size}px "Segoe UI", system-ui, sans-serif`;
+  ctx.textAlign = align;
   ctx.textBaseline = 'middle';
-  ctx.strokeStyle = 'rgba(0, 0, 0, 0.65)';
-  ctx.lineWidth = 4;
-  ctx.strokeText(text, x, y);
-  ctx.fillText(text, x, y);
+  ctx.fillText(value, x, y);
 }
 
-function cardinal(deg) {
-  const wrapped = ((deg % 360) + 360) % 360;
-  if (wrapped === 0) return 'N';
-  if (wrapped === 90) return 'E';
-  if (wrapped === 180) return 'S';
-  if (wrapped === 270) return 'W';
-  return String(wrapped);
-}
-
-function headingRibbon(ctx, x, y, w, h, degrees) {
-  panel(ctx, x, y, w, h);
-  const mid = x + w * 0.5;
-  const px = 3.6;
+function heading(ctx, degrees) {
+  const x = 418;
+  const y = 10;
+  box(ctx, x, y, 188, 42, 8);
+  const center = x + 94;
   ctx.save();
   ctx.beginPath();
-  ctx.rect(x + 2, y + 2, w - 4, h - 4);
+  ctx.rect(x + 4, y + 3, 92, 36);
   ctx.clip();
-  ctx.strokeStyle = '#ffe7b8';
-  ctx.fillStyle = '#ffe7b8';
-  ctx.lineWidth = 2;
-  const start = Math.floor((degrees - 70) / 10) * 10;
-  for (let mark = start; mark < degrees + 70; mark += 10) {
-    const at = mid + (mark - degrees) * px;
+  for (let mark = Math.floor((degrees - 40) / 10) * 10; mark <= degrees + 40; mark += 10) {
+    let relative = ((mark - degrees + 540) % 360) - 180;
+    const at = center + relative * 1.55;
     const major = ((mark % 360) + 360) % 360;
-    const tall = major % 30 === 0;
+    ctx.strokeStyle = 'rgba(220,247,255,0.75)';
     ctx.beginPath();
-    ctx.moveTo(at, y + (tall ? 8 : 16));
-    ctx.lineTo(at, y + 28);
+    ctx.moveTo(at, y + 7);
+    ctx.lineTo(at, y + (major % 30 === 0 ? 18 : 13));
     ctx.stroke();
-    if (tall) {
-      ctx.font = '700 16px Arial, sans-serif';
-      ctx.textAlign = 'center';
-      ctx.textBaseline = 'top';
-      ctx.fillText(cardinal(major), at, y + 30);
-    }
+    if (major % 30 === 0) text(ctx, String(major).padStart(3, '0'), at, y + 28, 9, WHITE, 'center');
   }
   ctx.restore();
-  ctx.fillStyle = 'rgba(8, 12, 16, 0.92)';
-  roundRect(ctx, mid - 78, y + 6, 156, h - 12, 6);
-  ctx.fill();
-  const text = String(Math.round(degrees) % 360).padStart(3, '0');
-  label(ctx, 'HDG', mid - 48, y + h * 0.5, 16, '#ffd48a', 'center');
-  label(ctx, text, mid + 22, y + h * 0.5, 32, '#ffe14a', 'center');
-  ctx.fillStyle = '#ffe14a';
+  ctx.fillStyle = 'rgba(8,14,24,0.9)';
+  ctx.fillRect(center - 44, y + 4, 88, 34);
+  text(ctx, 'HDG', center - 23, y + 21, 11, CYAN, 'center', 800);
+  text(ctx, String(Math.round(degrees)).padStart(3, '0'), center + 19, y + 21, 19, WHITE, 'center', 800);
+  ctx.fillStyle = AMBER;
   ctx.beginPath();
-  ctx.moveTo(mid, y + h);
-  ctx.lineTo(mid - 8, y + h + 8);
-  ctx.lineTo(mid + 8, y + h + 8);
+  ctx.moveTo(center, y + 42);
+  ctx.lineTo(center - 5, y + 48);
+  ctx.lineTo(center + 5, y + 48);
   ctx.fill();
 }
 
-function verticalTape(ctx, x, y, w, h, value, span, step, title, unit) {
-  panel(ctx, x, y, w, h);
-  const mid = y + h * 0.58;
-  const scale = (h * 0.72) / span;
+function tape(ctx, x, y, title, value, unit, span, step, low, high) {
+  const w = 72;
+  const h = 286;
+  box(ctx, x, y, w, h, 9);
+  text(ctx, title, x + w * 0.5, y + 17, 13, CYAN, 'center', 800);
+  const center = y + 151;
+  const scale = 116 / span;
+  const first = Math.floor((value - span) / step) * step;
   ctx.save();
   ctx.beginPath();
-  ctx.rect(x + 2, y + 28, w - 4, h - 34);
+  ctx.rect(x + 4, y + 31, w - 8, h - 63);
   ctx.clip();
-  ctx.strokeStyle = '#fff1d4';
-  ctx.fillStyle = '#fff1d4';
-  ctx.lineWidth = 2;
-  const start = Math.floor((value - span) / step) * step;
-  for (let mark = start; mark <= value + span; mark += step) {
-    const at = mid - (mark - value) * scale;
-    if (at < y + 24 || at > y + h - 4) continue;
+  for (let mark = first; mark <= value + span; mark += step) {
+    const py = center - (mark - value) * scale;
+    ctx.strokeStyle = 'rgba(232,249,255,0.68)';
     ctx.beginPath();
-    ctx.moveTo(x + w - 16, at);
-    ctx.lineTo(x + w - 4, at);
+    ctx.moveTo(x + 47, py);
+    ctx.lineTo(x + 64, py);
     ctx.stroke();
-    if (Math.round(mark) % (step * 2) === 0) {
-      ctx.font = '700 15px Arial, sans-serif';
-      ctx.textAlign = 'right';
-      ctx.textBaseline = 'middle';
-      ctx.fillText(String(Math.round(mark)), x + w - 20, at);
-    }
+    if (Math.round(mark / step) % 2 === 0) text(ctx, String(Math.round(mark)), x + 43, py, 10, WHITE, 'right');
   }
   ctx.restore();
-  label(ctx, title, x + w * 0.5, y + 16, 18, '#ffd48a', 'center');
-  ctx.fillStyle = 'rgba(6, 8, 10, 0.92)';
-  roundRect(ctx, x + 6, mid - 22, w - 12, 44, 6);
-  ctx.fill();
-  label(ctx, String(Math.round(value)), x + w * 0.5, mid, 30, '#ffe14a', 'center');
-  label(ctx, unit, x + w * 0.5, y + h - 16, 14, '#fff6e4', 'center');
+  ctx.fillStyle = 'rgba(8,14,24,0.88)';
+  ctx.fillRect(x + 4, center - 21, w - 8, 42);
+  ctx.strokeStyle = AMBER;
+  ctx.strokeRect(x + 4, center - 21, w - 8, 42);
+  text(ctx, String(Math.round(value)), x + w * 0.5, center - 2, 20, WHITE, 'center', 800);
+  text(ctx, unit, x + w * 0.5, center + 14, 8, AMBER, 'center', 800);
+  text(ctx, low, x + w * 0.5, y + h - 21, 9, WHITE, 'center', 700);
+  text(ctx, high, x + w * 0.5, y + h - 7, 9, 'rgba(220,240,248,0.7)', 'center', 600);
 }
 
-function attitude(ctx, cx, cy, radius, pitch, roll) {
+function attitude(ctx, cx, cy, radius, pitch, roll, vs) {
   ctx.save();
   ctx.beginPath();
   ctx.arc(cx, cy, radius, 0, Math.PI * 2);
   ctx.clip();
   ctx.translate(cx, cy);
   ctx.rotate(-roll);
-  const offset = pitch * 160;
-  ctx.fillStyle = '#3c8fd0';
-  ctx.fillRect(-radius * 2, -radius * 3 + offset, radius * 4, radius * 3);
-  ctx.fillStyle = '#c4783a';
-  ctx.fillRect(-radius * 2, offset, radius * 4, radius * 3);
-  ctx.strokeStyle = '#fff8ea';
-  ctx.lineWidth = 3;
+  const offset = Math.max(-radius, Math.min(radius, pitch * 88));
+  ctx.fillStyle = '#2782a4';
+  ctx.fillRect(-radius * 2, -radius * 2 + offset, radius * 4, radius * 2);
+  ctx.fillStyle = '#956d48';
+  ctx.fillRect(-radius * 2, offset, radius * 4, radius * 2);
+  ctx.strokeStyle = WHITE;
+  ctx.lineWidth = 1;
   ctx.beginPath();
   ctx.moveTo(-radius, offset);
   ctx.lineTo(radius, offset);
   ctx.stroke();
   ctx.restore();
-  ctx.strokeStyle = '#ffd48a';
-  ctx.lineWidth = 3;
+  ctx.strokeStyle = CYAN;
+  ctx.lineWidth = 1.5;
   ctx.beginPath();
   ctx.arc(cx, cy, radius, 0, Math.PI * 2);
   ctx.stroke();
-  ctx.strokeStyle = '#ffe14a';
-  ctx.lineWidth = 5;
+  ctx.strokeStyle = AMBER;
+  ctx.lineWidth = 2;
   ctx.beginPath();
-  ctx.moveTo(cx - radius * 0.72, cy);
-  ctx.lineTo(cx - 14, cy);
-  ctx.moveTo(cx + 14, cy);
-  ctx.lineTo(cx + radius * 0.72, cy);
-  ctx.moveTo(cx - 14, cy);
-  ctx.lineTo(cx - 14, cy + 8);
-  ctx.moveTo(cx + 14, cy);
-  ctx.lineTo(cx + 14, cy + 8);
-  ctx.moveTo(cx, cy);
-  ctx.lineTo(cx, cy + 12);
+  ctx.moveTo(cx - 16, cy);
+  ctx.lineTo(cx - 5, cy);
+  ctx.lineTo(cx, cy + 4);
+  ctx.lineTo(cx + 5, cy);
+  ctx.lineTo(cx + 16, cy);
   ctx.stroke();
-  label(ctx, 'AH', cx, cy + radius + 14, 14, '#ffd48a', 'center');
+  box(ctx, cx - radius, cy + radius + 8, radius * 2, 33, 6);
+  text(ctx, 'VS FPM', cx, cy + radius + 17, 8, CYAN, 'center', 800);
+  const rate = Math.round(vs);
+  text(ctx, `${rate > 0 ? '+' : ''}${rate}`, cx, cy + radius + 31, 12, rate < -900 ? '#ff7d69' : WHITE, 'center', 800);
 }
 
-function meter(ctx, x, y, w, h, fraction, title, warn) {
-  panel(ctx, x, y, w, h);
+function bar(ctx, x, y, width, fraction, name, warning = false) {
   const amount = Math.max(0, Math.min(1, fraction));
-  label(ctx, title, x + 10, y + 16, 16, '#ffd48a', 'left');
-  label(ctx, `${Math.round(amount * 100)}%`, x + w - 10, y + 16, 16, warn ? '#ff6a4a' : '#ffe14a', 'right');
-  ctx.fillStyle = '#1a140e';
-  roundRect(ctx, x + 10, y + 32, w - 20, 16, 4);
-  ctx.fill();
-  ctx.fillStyle = warn ? '#ff4d32' : '#ffb02e';
-  roundRect(ctx, x + 10, y + 32, Math.max(4, (w - 20) * amount), 16, 4);
-  ctx.fill();
+  const color = warning ? '#ff625c' : AMBER;
+  text(ctx, name, x, y, 10, CYAN, 'left', 800);
+  text(ctx, `${Math.round(amount * 100)}%`, x + width, y, 10, warning ? color : WHITE, 'right', 800);
+  ctx.fillStyle = 'rgba(220,244,250,0.15)';
+  ctx.fillRect(x, y + 8, width, 5);
+  ctx.fillStyle = color;
+  ctx.fillRect(x, y + 8, Math.max(2, width * amount), 5);
 }
 
-function objectivePanel(ctx, x, y, w, h, objective) {
-  panel(ctx, x, y, w, h);
-  label(ctx, objective.title, x + 12, y + 24, 22, '#ffe14a', 'left');
-  const lines = objective.line.split('\n');
-  if (lines.length > 1) {
-    label(ctx, lines[0], x + 12, y + 52, 14, '#fff8ea', 'left');
-    label(ctx, lines[1], x + 12, y + 70, 14, '#fff8ea', 'left');
-    label(ctx, objective.timer, x + 12, y + 93, 21, '#fff8ea', 'left');
-  } else {
-    label(ctx, objective.line, x + 12, y + 54, 18, '#fff8ea', 'left');
-    label(ctx, objective.timer, x + 12, y + 84, 26, '#fff8ea', 'left');
-  }
+function systems(ctx, x, y, plane, warning) {
+  box(ctx, x, y, 254, 67, 7);
+  bar(ctx, x + 10, y + 12, 72, plane.thr, 'THR');
+  bar(ctx, x + 91, y + 12, 72, plane.fuel, 'FUEL', plane.fuel < 0.22);
+  bar(ctx, x + 172, y + 12, 72, plane.dmg, 'DMG', plane.dmg > 0.45);
+  text(ctx, plane.flaps ? `FLAPS ${plane.flaps}` : 'FLAPS UP', x + 11, y + 48, 9, plane.flaps ? AMBER : WHITE, 'left', 800);
+  text(ctx, plane.brake ? 'BRAKE ON' : 'BRAKE OFF', x + 94, y + 48, 9, plane.brake ? '#ff776b' : WHITE, 'left', 800);
+  if (warning) text(ctx, `LOW FUEL  ·  ${warning}`, x + 243, y + 48, 9, '#ff776b', 'right', 900);
+  else if (plane.dmg > 0.1) text(ctx, `ENGINE ROUGH  −${Math.round(plane.dmg * 55)}% THRUST`, x + 243, y + 48, 8, AMBER, 'right', 700);
 }
 
-function waypoint(ctx, x, y, plane, ring) {
-  if (!ring) return;
-  const dx = ring.x - plane.x;
-  const dz = ring.z - plane.z;
-  const dist = Math.hypot(dx, dz);
+function missionCard(ctx, objective, cargo) {
+  const x = 96;
+  const y = 12;
+  box(ctx, x, y, 238, 70, 7);
+  text(ctx, objective.title, x + 10, y + 16, 13, AMBER, 'left', 900);
+  text(ctx, objective.line, x + 10, y + 37, 10, WHITE, 'left', 700);
+  text(ctx, `${cargo || 'OBJECTIVE'}   ·   ${objective.timer}`, x + 10, y + 56, 9, CYAN, 'left', 800);
+}
+
+function waypoint(ctx, plane, ring, marker) {
+  if (!ring && !marker) return;
+  const point = ring || marker;
+  const dx = point.x - plane.x;
+  const dz = point.z - plane.z;
   const bearing = Math.atan2(dx, -dz);
-  const rel = wrapPi(bearing - plane.yaw);
+  const relative = wrapPi(bearing - plane.yaw);
+  const cx = 512 + Math.sin(relative) * 150;
+  const cy = 184 - Math.cos(relative) * 50;
   ctx.save();
-  ctx.translate(x, y);
-  ctx.rotate(rel);
-  ctx.fillStyle = '#ffe14a';
+  ctx.translate(cx, cy);
+  ctx.rotate(relative);
+  ctx.strokeStyle = AMBER;
+  ctx.lineWidth = 2;
   ctx.beginPath();
-  ctx.moveTo(0, -22);
-  ctx.lineTo(12, 14);
-  ctx.lineTo(0, 6);
-  ctx.lineTo(-12, 14);
+  ctx.moveTo(0, -10);
+  ctx.lineTo(7, 7);
+  ctx.lineTo(0, 3);
+  ctx.lineTo(-7, 7);
   ctx.closePath();
-  ctx.fill();
+  ctx.stroke();
   ctx.restore();
-  const text = dist >= 1000 ? `${(dist / 1000).toFixed(1)} KM` : `${Math.round(dist)} M`;
-  label(ctx, `NEXT ${text}`, x, y + 36, 20, '#ffe14a', 'center');
+  const distance = Math.hypot(dx, dz);
+  const label = marker && marker.label ? marker.label : ring ? 'NEXT RING' : 'RUNWAY';
+  text(ctx, `${label}  ${Math.round(distance)} M`, cx, cy + 16, 10, AMBER, 'center', 800);
 }
 
-function minimap(ctx, x, y, w, h, plane, rings) {
-  panel(ctx, x, y, w, h);
-  label(ctx, 'MAP', x + 10, y + 14, 14, '#ffd48a', 'left');
-  const span = 1700;
-  const toX = (wx) => x + 8 + ((wx - plane.x + span * 0.5) / span) * (w - 16);
-  const toY = (wz) => y + h - 8 - ((wz - plane.z + span * 0.5) / span) * (h - 28);
+function map(ctx, x, y, plane, rings) {
+  const radius = 62;
   ctx.save();
   ctx.beginPath();
-  ctx.rect(x + 6, y + 24, w - 12, h - 32);
+  ctx.arc(x, y, radius, 0, Math.PI * 2);
   ctx.clip();
-  ctx.fillStyle = '#135e58';
-  ctx.fillRect(x + 6, y + 24, w - 12, h - 32);
-  const cells = 26;
+  ctx.fillStyle = 'rgba(8,40,47,0.84)';
+  ctx.fillRect(x - radius, y - radius, radius * 2, radius * 2);
+  const span = 1450;
+  const toX = (wx) => x + ((wx - plane.x) / span) * radius * 2;
+  const toY = (wz) => y + ((wz - plane.z) / span) * radius * 2;
+  const cells = 24;
   for (let iz = 0; iz < cells; iz += 1) {
     for (let ix = 0; ix < cells; ix += 1) {
-      const wx = plane.x - span * 0.5 + ((ix + 0.5) / cells) * span;
-      const wz = plane.z - span * 0.5 + ((iz + 0.5) / cells) * span;
-      const height = islandHeight(wx, wz);
-      if (height < 0.35) continue;
-      ctx.fillStyle = height > 14 ? '#7ea24a' : height < 1.3 ? '#e4d2a4' : '#2f8a40';
-      const px = toX(wx);
-      const py = toY(wz);
-      ctx.fillRect(px, py, (w - 16) / cells + 1, (h - 28) / cells + 1);
+      const wx = plane.x - span / 2 + ((ix + 0.5) / cells) * span;
+      const wz = plane.z - span / 2 + ((iz + 0.5) / cells) * span;
+      const elevation = islandHeight(wx, wz);
+      if (elevation < 0.35) continue;
+      ctx.fillStyle = elevation > 14 ? '#82985c' : elevation < 1.3 ? '#d9c99a' : '#43834e';
+      ctx.fillRect(toX(wx), toY(wz), radius * 2 / cells + 1, radius * 2 / cells + 1);
     }
   }
   for (let i = 0; i < TOWERS.length; i += 1) {
-    ctx.fillStyle = '#cbb892';
+    ctx.fillStyle = '#d7bf93';
     ctx.beginPath();
-    ctx.arc(toX(TOWERS[i].x), toY(TOWERS[i].z), 3.5, 0, Math.PI * 2);
+    ctx.arc(toX(TOWERS[i].x), toY(TOWERS[i].z), 2.2, 0, Math.PI * 2);
     ctx.fill();
   }
-  ctx.strokeStyle = '#f4f1ea';
-  ctx.lineWidth = 2;
-  for (let i = 0; i < FIELDS.length; i += 1) {
-    const field = FIELDS[i];
-    const c = Math.cos(field.heading);
-    const s = Math.sin(field.heading);
-    const half = field.length * 0.5;
+  for (const field of FIELDS) {
+    const length = field.length / 2;
+    ctx.strokeStyle = '#f3f5e8';
+    ctx.lineWidth = 2;
     ctx.beginPath();
-    ctx.moveTo(toX(field.x + s * half), toY(field.z + c * half));
-    ctx.lineTo(toX(field.x - s * half), toY(field.z - c * half));
+    ctx.moveTo(toX(field.x + Math.sin(field.heading) * length), toY(field.z - Math.cos(field.heading) * length));
+    ctx.lineTo(toX(field.x - Math.sin(field.heading) * length), toY(field.z + Math.cos(field.heading) * length));
     ctx.stroke();
   }
   if (rings) {
     for (let i = 0; i < rings.list.length; i += 1) {
-      const ring = rings.list[i];
-      ctx.fillStyle = ring.taken ? '#7dffa8' : i === rings.index ? '#ffe14a' : '#c89030';
+      const item = rings.list[i];
+      ctx.fillStyle = item.taken ? '#69f5b2' : i === rings.index ? AMBER : '#b8a06a';
       ctx.beginPath();
-      ctx.arc(toX(ring.x), toY(ring.z), i === rings.index ? 4.5 : 3, 0, Math.PI * 2);
+      ctx.arc(toX(item.x), toY(item.z), i === rings.index ? 3.2 : 2, 0, Math.PI * 2);
       ctx.fill();
     }
   }
   ctx.save();
-  ctx.translate(toX(plane.x), toY(plane.z));
+  ctx.translate(x, y);
   ctx.rotate(plane.yaw);
-  ctx.fillStyle = '#ff5a3c';
+  ctx.fillStyle = '#ff675e';
   ctx.beginPath();
   ctx.moveTo(0, -7);
-  ctx.lineTo(5, 6);
-  ctx.lineTo(-5, 6);
+  ctx.lineTo(4, 5);
+  ctx.lineTo(0, 3);
+  ctx.lineTo(-4, 5);
   ctx.closePath();
   ctx.fill();
   ctx.restore();
   ctx.restore();
+  ctx.strokeStyle = 'rgba(104,231,242,0.9)';
+  ctx.lineWidth = 1.4;
+  ctx.beginPath();
+  ctx.arc(x, y, radius, 0, Math.PI * 2);
+  ctx.stroke();
+  text(ctx, 'NAV', x, y - radius + 9, 8, WHITE, 'center', 800);
 }
 
-function keys(ctx, width, height) {
-  const y = height - 28;
-  ctx.fillStyle = 'rgba(8, 12, 16, 0.82)';
-  ctx.fillRect(0, y, width, 28);
-  label(
-    ctx,
-    'W/S PITCH   A/D ROLL   Q/E RUDDER   SHIFT/CTRL THR   F FLAPS   G BRAKE   C VIEW   P PAUSE',
-    width * 0.5,
-    y + 14,
-    14,
-    '#fff1d0',
-    'center',
-  );
-}
-
-function weatherBadge(ctx, weather) {
-  if (!weather || weather.rain <= 0) return;
-  panel(ctx, 650, 78, 224, 40);
-  label(ctx, 'SQUALL  ·  CROSSWIND  ·  RAIN', 762, 98, 12, '#aee8ef', 'center');
-  ctx.strokeStyle = `rgba(185, 225, 238, ${0.22 + weather.rain * 0.25})`;
-  ctx.lineWidth = 1;
-  for (let i = 0; i < 36; i += 1) {
-    const x = ((i * 83 + 29 - Math.floor(weather.time * 45)) % 1024 + 1024) % 1024;
-    const y = (i * 47 + 17 + Math.floor(weather.time * 110)) % 610;
+function flightCues(ctx, plane) {
+  const centerX = 512;
+  const centerY = 322;
+  ctx.strokeStyle = 'rgba(111,239,204,0.82)';
+  ctx.lineWidth = 1.2;
+  for (let i = -2; i <= 2; i += 1) {
+    if (!i) continue;
+    const dy = i * 18 + plane.pitch * 55;
     ctx.beginPath();
-    ctx.moveTo(x, y);
-    ctx.lineTo(x - 7, y + 18);
+    ctx.moveTo(centerX - (i % 2 ? 18 : 27), centerY + dy);
+    ctx.lineTo(centerX + (i % 2 ? 18 : 27), centerY + dy);
+    if (Math.abs(i) === 2) {
+      ctx.moveTo(centerX - 27, centerY + dy);
+      ctx.lineTo(centerX - 20, centerY + dy - 4);
+      ctx.moveTo(centerX + 27, centerY + dy);
+      ctx.lineTo(centerX + 20, centerY + dy - 4);
+    }
+    ctx.stroke();
+  }
+  ctx.strokeStyle = '#a9ffb5';
+  ctx.beginPath();
+  ctx.moveTo(centerX - 13, centerY);
+  ctx.lineTo(centerX - 5, centerY);
+  ctx.moveTo(centerX + 5, centerY);
+  ctx.lineTo(centerX + 13, centerY);
+  ctx.moveTo(centerX, centerY - 5);
+  ctx.lineTo(centerX, centerY + 5);
+  ctx.stroke();
+}
+
+function keyStrip(ctx) {
+  ctx.fillStyle = 'rgba(5,11,18,0.55)';
+  ctx.fillRect(0, 621, 1024, 19);
+  text(ctx, 'W/S PITCH   A/D ROLL   Q/E RUDDER   SHIFT/CTRL THR   F FLAPS   G BRAKE   C VIEW   P PAUSE', 512, 631, 9, WHITE, 'center', 700);
+}
+
+function weather(ctx, state) {
+  if (!state || state.rain <= 0) return;
+  box(ctx, 738, 12, 188, 36, 7);
+  text(ctx, 'WIND 240/18 G26', 832, 30, 12, '#bdebf4', 'center', 900);
+  ctx.strokeStyle = `rgba(205,235,244,${0.3 + state.rain * 0.35})`;
+  ctx.lineWidth = 1;
+  for (let i = 0; i < 38; i += 1) {
+    const px = ((i * 83 + 29 - Math.floor(state.time * 45)) % 1024 + 1024) % 1024;
+    const py = (i * 47 + 17 + Math.floor(state.time * 110)) % 610;
+    ctx.beginPath();
+    ctx.moveTo(px, py);
+    ctx.lineTo(px - 6, py + 16);
     ctx.stroke();
   }
 }
@@ -313,60 +313,51 @@ export function drawHud(canvas, view) {
   const width = canvas.width;
   const height = canvas.height;
   ctx.clearRect(0, 0, width, height);
-  const sx = width / 1024;
-  const sy = height / 640;
   ctx.save();
-  ctx.scale(sx, sy);
+  ctx.scale(width / 1024, height / 640);
   const plane = view.readout;
-  const objective = view.objective;
-
-  weatherBadge(ctx, view.weather);
-  headingRibbon(ctx, 190, 8, 644, 58, plane.hdg);
-  verticalTape(ctx, 14, 78, 112, 400, plane.kts, 80, 10, 'KTS', 'AIRSPEED');
-  verticalTape(ctx, 898, 78, 112, 400, plane.altFt, 500, 50, 'ALT', 'FEET');
-  objectivePanel(ctx, 140, 78, 330, 108, objective);
-  attitude(ctx, 196, 360, 62, plane.pitch, plane.roll);
-
-  panel(ctx, 276, 320, 120, 78);
-  label(ctx, 'VS FPM', 292, 340, 15, '#ffd48a', 'left');
-  const vs = Math.round(plane.vsFpm);
-  const vsText = `${vs > 0 ? '+' : ''}${vs}`;
-  label(ctx, vsText, 292, 372, 28, '#ffe14a', 'left');
+  weather(ctx, view.weather);
+  heading(ctx, plane.hdg);
+  missionCard(ctx, view.objective, view.missionLabel);
 
   if (view.cockpit) {
+    text(ctx, `KTS ${Math.round(plane.kts)}`, 350, 73, 14, WHITE, 'center', 900);
+    text(ctx, `ALT ${Math.round(plane.altFt)} FT`, 512, 73, 14, WHITE, 'center', 900);
+    text(ctx, `HDG ${plane.hdgText}`, 674, 73, 14, WHITE, 'center', 900);
+    systems(ctx, 152, 337, plane, plane.fuel < 0.16 ? 'RETURN TO FIELD' : '');
     drawInstrumentPanel(ctx, plane);
   } else {
-    meter(ctx, 140, 470, 168, 58, plane.thr, 'THR', false);
-    meter(ctx, 318, 470, 168, 58, plane.fuel, 'FUEL', plane.fuel < 0.22);
-    meter(ctx, 496, 470, 168, 58, plane.dmg, 'DMG', plane.dmg > 0.45);
-
-    panel(ctx, 140, 538, 150, 36);
-    label(ctx, `FLAPS ${plane.flaps}`, 152, 556, 16, plane.flaps ? '#ffe14a' : '#fff6e4', 'left');
-    panel(ctx, 298, 538, 110, 36);
-    label(ctx, plane.brake ? 'BRAKE' : 'BRAKE', 312, 556, 16, plane.brake ? '#ff6a4a' : '#9aa098', 'left');
+    tape(ctx, 10, 112, 'KTS', plane.kts, 'KNOTS', 80, 10, '0', '140');
+    tape(ctx, 942, 112, 'ALT', plane.altFt, 'FT', 600, 50, 'MSL', 'AGL');
+    attitude(ctx, 112, 462, 34, plane.pitch, plane.roll, plane.vsFpm);
+    systems(ctx, 166, 503, plane, plane.fuel < 0.16 ? 'RETURN TO FIELD' : '');
+    map(ctx, 928, 542, plane, view.rings);
   }
-
+  flightCues(ctx, plane);
   const ring = view.rings && view.rings.list[view.rings.index];
-  waypoint(ctx, 512, 168, plane, ring && !ring.taken ? ring : null);
-  if (!view.cockpit) minimap(ctx, 690, 430, 196, 168, plane, view.rings);
+  waypoint(ctx, plane, ring && !ring.taken ? ring : null, view.waypoint);
 
-  if (plane.buffet > 0.45 && !plane.crashed) {
-    if (Math.floor((view.time ?? 0) * 5) % 2 === 0) {
-      panel(ctx, 420, 222, 184, 58);
-      label(ctx, 'STALL', 512, 251, 38, '#ff4d32', 'center');
-    }
+  if (plane.buffet > 0.45 && !plane.crashed && Math.floor((view.time || 0) * 5) % 2 === 0) {
+    box(ctx, 474, 230, 76, 34, 6);
+    text(ctx, 'STALL', 512, 247, 17, '#ff625c', 'center', 900);
   }
-  if (view.eventBanner && view.eventBanner.until > (view.time ?? 0)) {
-    panel(ctx, 260, 224, 504, 104);
-    label(ctx, view.eventBanner.title, 512, 258, 30, view.eventBanner.crash ? '#ff6045' : '#ffe14a', 'center');
-    label(ctx, view.eventBanner.detail, 512, 296, 20, '#fff6e4', 'center');
+  if (view.callout) {
+    box(ctx, 755, 535, 250, 76, 7);
+    text(ctx, view.callout.title, 880, 550, 13, AMBER, 'center', 900);
+    text(ctx, view.callout.line, 880, 570, 10, WHITE, 'center', 800);
+    text(ctx, view.callout.detail, 880, 591, 15, '#8effb8', 'center', 900);
+  }
+  if (view.eventBanner && view.eventBanner.until > (view.time || 0)) {
+    box(ctx, 340, 215, 344, 78, 8);
+    text(ctx, view.eventBanner.title, 512, 240, 24, view.eventBanner.crash ? '#ff625c' : AMBER, 'center', 900);
+    text(ctx, view.eventBanner.detail, 512, 270, 14, WHITE, 'center', 800);
   }
   if (plane.crashed) {
-    panel(ctx, 300, 230, 424, 90);
-    label(ctx, 'CRASH', 512, 258, 36, '#ff4d32', 'center');
-    label(ctx, plane.crashReason || 'TERRAIN', 512, 294, 22, '#fff6e4', 'center');
+    box(ctx, 362, 220, 300, 70, 8);
+    text(ctx, 'CRASH', 512, 242, 25, '#ff625c', 'center', 900);
+    text(ctx, plane.crashReason || 'TERRAIN', 512, 270, 13, WHITE, 'center', 800);
   }
-  if (view.paused) label(ctx, 'PAUSED', 512, 250, 40, '#ffe14a', 'center');
+  if (view.paused) text(ctx, 'PAUSED', 512, 250, 30, AMBER, 'center', 900);
+  keyStrip(ctx);
   ctx.restore();
-  keys(ctx, width, height);
 }
