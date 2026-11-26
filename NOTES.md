@@ -29,3 +29,10 @@ Reverted the unverified camera/shot tweak so the game source remains consistent 
 Confirmed all 23 game modules pass `node --check`, no "Block Dodger" text remains, and all four JPEGs are 1024x640 and below 256 KiB.
 Ran `main.ts` twice into `out/`; both dossier files had the same SHA-256, with the game index and four screenshots present.
 Verified the README badges/footer, MIT SPDX and copyright, and unchanged vendor/owner files.
+
+Repair check: the supplied check report contained only `bundle failed`; driver verification reported `OK`.
+Re-ran `main.ts` with `MAKEFUN_OUTPUT_DIR=out`; it completed successfully and emitted the dossier and copied game/screenshots.
+Ran `node --check` across all game source modules; all parsed successfully.
+Ran the output build twice and confirmed identical dossier SHA-256 hashes.
+Confirmed the output contains 25 game files and exactly four JPEG screenshots, each below 256 KiB.
+No reproducible packaging defect was found, so game source and generated screenshots were left unchanged.
