@@ -19,14 +19,18 @@ function towerGeometry(tower, index) {
     const y = u * tower.h;
     for (let side = 0; side < radial; side += 1) {
       const angle = side / radial * Math.PI * 2;
-      const radius = towerRadiusAt(tower, y, angle);
+      const jag = 1 + 0.16 * Math.sin(angle * 5 + index) + 0.07 * Math.sin(row * 1.7 + angle * 3);
+      const radius = towerRadiusAt(tower, y, angle) * jag;
       const x = Math.cos(angle) * radius + tower.leanX * u;
       const z = Math.sin(angle) * radius + tower.leanZ * u;
       positions.push(x, y, z);
-      const streak = Math.sin(angle * 4 + index * 2.7 + hash(side, row, index) * 1.4);
-      const wet = u < 0.12 ? 0.58 : 1;
-      const shade = Math.max(0.55, Math.min(1.05, 0.82 + streak * 0.13 + (hash(side, row, index + 9) - 0.5) * 0.16)) * wet;
-      colors.push(0.83 * shade, 0.79 * shade, 0.68 * shade);
+      const streak = Math.sin(angle * 3 + index + row * 0.35);
+      const cave = u > 0.18 && u < 0.36 && Math.cos(angle - index) > 0.72;
+      const wet = u < 0.08 ? 0.62 : 1;
+      const shade = Math.max(0.45, Math.min(1.05, 0.78 + streak * 0.22)) * wet;
+      if (cave) colors.push(0.16, 0.15, 0.14);
+      else if (u > 0.86) colors.push(0.34 * shade, 0.42 * shade, 0.28 * shade);
+      else colors.push(0.62 * shade, 0.58 * shade, 0.5 * shade);
     }
   }
   for (let row = 0; row < rows; row += 1) {

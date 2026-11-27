@@ -53,3 +53,10 @@ Added lazy-start synthesized engine, wind, stall, ring, touchdown, and crash aud
 Landing and crash events now show timed grade/reason banners, crash effects detach a wing, and stall alerts flash with camera shake.
 Changed modules pass Node syntax checks, `git diff --check`, and the local dossier/output copy check.
 The screenshot helper failed twice before rendering because its Chrome DevTools endpoint was unreachable; checked-in screenshots therefore remain the prior phase renders.
+
+V2 phase 3: replaced faceted cloud rocks with soft warm-white and lavender sprite puffs, higher and fewer so they stay brighter than the sky.
+The main island mesh now shows sand, grass, jungle and paddy bands, with denser trees, and the distant ridges no longer set flatShading on a basic material.
+The Kestrel wing is a thick cambered airfoil with a dark underside, red tip caps and a red stripe; the prop keeps a visible disc when the shot is frozen.
+Chase HUD is a slim edge glass stack (HDG, KTS, ALT, THR/FUEL/DMG, mission, minimap). Brake and engine-rough no longer share a line, and the cockpit view drops the extra systems slab.
+Cockpit view is a 3D glare shield, pillars, lit six-pack and yoke on short final to Harbour 36, with the runway and PAPI through the glass.
+Shots are four live 1280x720 moments: First Light ring, Harbour final, mail drop over the stilt village at 30% fuel, and a grade-A touchdown on the 36. Old menu shots were removed.

@@ -4,6 +4,13 @@
 import * as THREE from '../vendor/three.module.min.js';
 import { heightAt } from './config.js';
 
+const euler = new THREE.Euler(0, 0, 0, 'YXZ');
+const quat = new THREE.Quaternion();
+const eyeLocal = new THREE.Vector3();
+const lookLocal = new THREE.Vector3();
+const upLocal = new THREE.Vector3(0, 1, 0);
+const worldPoint = new THREE.Vector3();
+
 export function createCameraRig(aspect) {
   const camera = new THREE.PerspectiveCamera(46, aspect, 0.25, 9000);
   return {
@@ -17,6 +24,8 @@ export function createCameraRig(aspect) {
     roll: 0,
     yaw: 0,
     ready: false,
+    backMul: 1,
+    lead: 10,
   };
 }
 
@@ -37,27 +46,32 @@ export function setCameraMode(rig, mode) {
 export function updateCameraRig(rig, plane, dt) {
   const aim = body(plane.yaw);
   if (rig.mode === 'cockpit') {
-    const eyeX = plane.x + aim.fx * 0.1;
-    const eyeY = plane.y + 0.96 + Math.sin(plane.age * 8) * plane.buffet * 0.035;
-    const eyeZ = plane.z + aim.fz * 1.15;
-    rig.camera.position.set(eyeX, eyeY, eyeZ);
-    rig.camera.up.set(
-      aim.rx * Math.sin(plane.roll),
-      Math.cos(plane.roll),
-      aim.rz * Math.sin(plane.roll),
-    );
-    const reach = 90;
-    rig.camera.lookAt(
-      eyeX + aim.fx * reach,
-      eyeY + Math.sin(plane.pitch) * reach - 7 + rig.lookPitch * 8,
-      eyeZ + aim.fz * reach,
-    );
+    euler.set(plane.pitch, plane.yaw, -plane.roll, 'YXZ');
+    quat.setFromEuler(euler);
+    eyeLocal.set(0, 0.9, 0.62);
+    lookLocal.set(0, -6.5, -42);
+    upLocal.set(Math.sin(plane.roll) * 0.15, 1, 0);
+    worldPoint.copy(eyeLocal).applyQuaternion(quat);
+    rig.camera.position.set(plane.x + worldPoint.x, plane.y + worldPoint.y, plane.z + worldPoint.z);
+    const look = lookLocal.applyQuaternion(quat);
+    rig.camera.up.copy(upLocal.applyQuaternion(quat));
+    rig.camera.lookAt(plane.x + look.x, plane.y + look.y, plane.z + look.z);
+    if (rig.camera.near !== 0.05) {
+      rig.camera.near = 0.05;
+      rig.camera.fov = 52;
+      rig.camera.updateProjectionMatrix();
+    }
     return;
+  }
+  if (rig.camera.near !== 0.25) {
+    rig.camera.near = 0.25;
+    rig.camera.fov = 46;
+    rig.camera.updateProjectionMatrix();
   }
 
   const speed = Math.hypot(plane.vx, plane.vy, plane.vz);
-  const back = 18 + Math.min(7, speed * 0.055);
-  const up = 6.5 + Math.min(1.5, speed * 0.012);
+  const back = (24 + Math.min(5, speed * 0.035)) * rig.backMul;
+  const up = 4.6 + Math.min(1.2, speed * 0.01);
   const side = rig.lookYaw * 14;
   const desiredX = plane.x - aim.fx * back + aim.rx * side;
   const terrainFloor = heightAt(desiredX, plane.z - aim.fz * back + aim.rz * side) + 2.4;
@@ -73,9 +87,9 @@ export function updateCameraRig(rig, plane, dt) {
   rig.camera.up.set(Math.sin(rig.roll) * 0.45, Math.cos(rig.roll * 0.45), 0);
   rig.camera.position.set(rig.cx, rig.cy, rig.cz);
   rig.camera.lookAt(
-    plane.x + aim.fx * 14,
-    plane.y,
-    plane.z + aim.fz * 14,
+    plane.x + aim.fx * rig.lead,
+    plane.y + 0.4,
+    plane.z + aim.fz * rig.lead,
   );
   const buffet = plane.buffet || 0;
   rig.camera.position.x += Math.sin(plane.age * 47) * buffet * 0.12;

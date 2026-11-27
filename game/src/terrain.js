@@ -30,23 +30,31 @@ function visualHeight(x, z) {
   return h;
 }
 
+function inPaddies(x, z, height) {
+  const terrace = Math.hypot(x + 760, z - 50);
+  if (terrace < 340 && height > 7) return true;
+  return x > 70 && x < 310 && z > -30 && z < 250 && height > 0.6 && height < 12;
+}
+
 function paintVertex(height, x, z, step) {
   const east = visualHeight(x + step, z);
   const north = visualHeight(x, z + step);
   const slope = Math.max(Math.abs(east - height), Math.abs(north - height));
-  const terrace = Math.hypot(x + 760, z - 50);
-  if (height < 0.2) return [0.05, 0.22, 0.24];
-  if (height < 0.9) return [0.89, 0.79, 0.56];
-  if (height < 2.2) return [0.55, 0.67, 0.4];
-  if (fieldAt(x, z)) return [0.42, 0.4, 0.36];
-  if (slope > 8) return [0.63, 0.56, 0.48];
-  if (terrace < 360 && height > 8) {
-    const band = Math.floor(height / 3.4) % 2;
-    return band ? [0.39, 0.59, 0.27] : [0.69, 0.67, 0.37];
+  const field = fieldAt(x, z);
+  if (height < 0.18) return [0.04, 0.38, 0.40];
+  if (field && field.surface === 'asphalt') return [0.22, 0.23, 0.24];
+  if (field) return [0.36, 0.52, 0.28];
+  if (height < 1.7) return [0.94, 0.84, 0.58];
+  if (slope > 7) return [0.62, 0.55, 0.46];
+  if (inPaddies(x, z, height)) {
+    const band = Math.floor((x * 0.08 + z * 0.05) / 1.1) % 2;
+    return band ? [0.23, 0.50, 0.24] : [0.78, 0.76, 0.40];
   }
-  if (height > 20) return [0.17, 0.37, 0.2];
-  if (height > 8) return [0.25, 0.49, 0.23];
-  return [0.31, 0.53, 0.25];
+  const jungle = Math.sin(x * 0.031 + 2.2) * Math.cos(z * 0.027) > 0.25;
+  if (jungle && height > 2) return [0.09, 0.30, 0.15];
+  if (height > 18) return [0.16, 0.38, 0.18];
+  if (height > 6) return [0.24, 0.50, 0.22];
+  return [0.40, 0.64, 0.28];
 }
 
 function buildLand() {
@@ -59,7 +67,13 @@ function buildLand() {
   for (let i = 0; i < position.count; i += 1) {
     const x = position.getX(i);
     const z = position.getZ(i);
-    const h = visualHeight(x, z);
+    const base = visualHeight(x, z);
+    const onField = fieldAt(x, z);
+    let h = base;
+    if (!onField && base > 0.45) {
+      h = base + Math.abs(Math.sin(x * 0.045) * Math.cos(z * 0.033)) * 1.7;
+      if (inPaddies(x, z, base)) h = Math.floor(base / 1.35) * 1.35 + 0.45;
+    }
     position.setY(i, h < 0.12 ? -1.4 : h);
     const rgb = paintVertex(h, x, z, step);
     colors[i * 3] = rgb[0];
@@ -104,7 +118,7 @@ function buildVegetation() {
     const x = (noise(attempt, 1, 17) - 0.5) * WORLD.size * 0.91;
     const z = (noise(attempt, 2, 41) - 0.5) * WORLD.size * 0.91;
     const ground = islandHeight(x, z);
-    if (ground < 3 || fieldAt(x, z) || noise(attempt, 3, 61) < 0.48) continue;
+    if (ground < 1.05 || fieldAt(x, z) || noise(attempt, 3, 61) < 0.18) continue;
     let towerClear = true;
     for (let i = 0; i < TOWERS.length; i += 1) {
       if (Math.hypot(x - TOWERS[i].x, z - TOWERS[i].z) < TOWERS[i].r * 1.65) {
@@ -152,7 +166,6 @@ function buildDistantRidges() {
   const geometry = new THREE.ConeGeometry(1, 1, 5, 1);
   const material = new THREE.MeshBasicMaterial({
     color: 0xffffff,
-    flatShading: true,
     fog: false,
     transparent: true,
     opacity: 0.84,

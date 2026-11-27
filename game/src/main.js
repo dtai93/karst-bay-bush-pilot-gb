@@ -44,6 +44,29 @@ const rings = createRings(FIRST_LIGHT_RINGS);
 scene.add(rings.root);
 const aircraft = createAircraft();
 scene.add(aircraft.root);
+const mailSack = new THREE.Group();
+const sackCloth = new THREE.Mesh(
+  new THREE.SphereGeometry(0.9, 12, 10),
+  new THREE.MeshStandardMaterial({ color: 0xd25a2e, roughness: 0.78 }),
+);
+sackCloth.scale.set(0.85, 1.15, 0.72);
+mailSack.add(sackCloth);
+const sackTie = new THREE.Mesh(
+  new THREE.CylinderGeometry(0.12, 0.22, 0.36, 8),
+  new THREE.MeshStandardMaterial({ color: 0xf3e6c8, roughness: 0.7 }),
+);
+sackTie.position.y = 0.95;
+mailSack.add(sackTie);
+mailSack.scale.setScalar(1.8);
+mailSack.visible = false;
+scene.add(mailSack);
+const roofTarget = new THREE.Mesh(
+  new THREE.TorusGeometry(3.4, 0.22, 8, 28),
+  new THREE.MeshBasicMaterial({ color: 0xffe14a }),
+);
+roofTarget.rotation.x = Math.PI / 2;
+roofTarget.visible = false;
+scene.add(roofTarget);
 const particles = createParticles(scene);
 const audio = createAudio();
 let brokenWing = null;
@@ -221,7 +244,16 @@ function frame(now) {
   const liveWeather = sampleWeather(session.mission.id, session.time);
   updateParticles(particles, session.flight, liveWeather, elapsed, session.frozen);
   audio.update(session.flight, elapsed);
-  aircraft.root.visible = session.camera.mode !== 'cockpit';
+  const cockpitView = session.camera.mode === 'cockpit';
+  aircraft.cockpit.visible = cockpitView;
+  for (let i = 0; i < aircraft.root.children.length; i += 1) {
+    const child = aircraft.root.children[i];
+    if (child !== aircraft.cockpit) child.visible = !cockpitView;
+  }
+  mailSack.visible = Boolean(session.sack);
+  if (session.sack) mailSack.position.set(session.sack.x, session.sack.y, session.sack.z);
+  roofTarget.visible = Boolean(session.target);
+  if (session.target) roofTarget.position.set(session.target.x, session.target.y, session.target.z);
   updateRings(rings, session.time);
   updateWater(water, session.time, session.frozen);
   updateCameraRig(session.camera, session.flight, session.frozen ? 0.5 : elapsed);
@@ -233,6 +265,7 @@ function frame(now) {
     rings: session.rings,
     paused: session.paused,
     cockpit: session.camera.mode === 'cockpit',
+    callout: session.callout,
     weather,
     time: session.time,
     eventBanner: session.eventBanner,

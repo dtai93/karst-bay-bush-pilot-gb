@@ -1,10 +1,8 @@
 // Deterministic scenes for ?shot=name&seed=1. The real flight model runs a
 // fixed number of steps under a simple autopilot, then the picture freezes.
 
-import { FIRST_LIGHT_RINGS, HARBOUR, STEP, WORLD, clamp, wrapPi } from './config.js';
+import { HARBOUR, STEP, VILLAGE, WORLD, clamp, wrapPi } from './config.js';
 import { createMissionState } from './mission-runner.js';
-
-const COVER_RING = 3;
 
 function aimAt(plane, point, altitude) {
   const dx = point.x - plane.x;
@@ -13,73 +11,12 @@ function aimAt(plane, point, altitude) {
   const dyaw = wrapPi(want - plane.yaw);
   const altErr = altitude - plane.y;
   return {
-    pitch: clamp(altErr * 0.04 - plane.vy * 0.15, -1, 1),
-    roll: clamp(dyaw * 1.6, -1, 1),
-    rudder: clamp(dyaw * 0.3, -1, 1),
-    throttle: 0.62,
+    pitch: clamp(altErr * 0.045 - plane.vy * 0.18, -1, 1),
+    roll: clamp(dyaw * 1.7, -1, 1),
+    rudder: clamp(dyaw * 0.35, -1, 1),
+    throttle: 0.64,
     brake: false,
   };
-}
-
-function placeCover(session) {
-  const plane = session.flight;
-  const speed = 39;
-  plane.x = 30;
-  plane.y = 60;
-  plane.z = 300;
-  plane.yaw = -0.02;
-  plane.pitch = 0.04;
-  plane.roll = -0.36;
-  plane.vx = Math.sin(plane.yaw) * speed;
-  plane.vy = -1.1;
-  plane.vz = -Math.cos(plane.yaw) * speed;
-  plane.throttle = 0.62;
-  plane.rpm = 0.68;
-  plane.fuel = 0.64;
-  plane.damage = 0.16;
-  plane.flaps = 1;
-  plane.onGround = false;
-  plane.crashed = false;
-  plane.crashReason = '';
-  pinApproach(session);
-  session.camera.mode = 'chase';
-  session.camera.lookYaw = 0;
-  session.camera.lookPitch = 0;
-  session.camera.ready = false;
-  session.scripted = true;
-}
-
-function placeFinal(session) {
-  const plane = session.flight;
-  plane.x = HARBOUR.x;
-  plane.y = 49;
-  plane.z = 105;
-  plane.yaw = HARBOUR.heading;
-  plane.pitch = -0.035;
-  plane.roll = 0.015;
-  plane.vx = 0;
-  plane.vy = -1.3;
-  plane.vz = -38;
-  plane.throttle = 0.57;
-  plane.rpm = 0.62;
-  plane.fuel = 0.34;
-  plane.damage = 0.04;
-  plane.flaps = 2;
-  plane.onGround = false;
-  plane.crashed = false;
-  plane.crashReason = '';
-  session.camera.mode = 'cockpit';
-  session.camera.lookYaw = 0;
-  session.camera.lookPitch = 0;
-  session.camera.ready = false;
-  session.scripted = true;
-}
-
-function pinApproach(session) {
-  session.rings.index = COVER_RING;
-  for (let i = 0; i < session.rings.list.length; i += 1) {
-    session.rings.list[i].taken = i < COVER_RING;
-  }
 }
 
 function flyToward(session, steps, point, altitude) {
@@ -88,61 +25,183 @@ function flyToward(session, steps, point, altitude) {
   }
 }
 
+function pinVelocity(plane, speed) {
+  plane.vx = Math.sin(plane.yaw) * speed;
+  plane.vy = plane.pitch * speed * 0.35;
+  plane.vz = -Math.cos(plane.yaw) * speed;
+}
+
+function moveRing(session, index, x, y, z) {
+  const ring = session.rings.list[index];
+  ring.x = x;
+  ring.y = y;
+  ring.z = z;
+  ring.group.position.set(x, y, z);
+  ring.group.rotation.y = 0;
+  return ring;
+}
+
+function markRings(session, active) {
+  session.rings.index = active;
+  for (let i = 0; i < session.rings.list.length; i += 1) {
+    session.rings.list[i].taken = i < active;
+    session.rings.list[i].group.visible = i >= active && i <= active + 1;
+  }
+}
+
+function airborne(plane, x, y, z, yaw, roll, pitch) {
+  plane.x = x;
+  plane.y = y;
+  plane.z = z;
+  plane.yaw = yaw;
+  plane.pitch = pitch;
+  plane.roll = roll;
+  plane.onGround = false;
+  plane.crashed = false;
+  plane.crashReason = '';
+  plane.brake = false;
+  pinVelocity(plane, 40);
+}
+
+function frameCamera(session, mode, lookYaw, lookPitch, backMul, lead) {
+  session.camera.mode = mode;
+  session.camera.lookYaw = lookYaw;
+  session.camera.lookPitch = lookPitch;
+  session.camera.backMul = backMul;
+  session.camera.lead = lead;
+  session.camera.ready = false;
+}
+
+function finish(session) {
+  session.screen = 'flight';
+  session.paused = false;
+  session.scripted = true;
+  session.frozen = true;
+  session.flight.crashed = false;
+}
+
+function stageCover(session) {
+  const plane = session.flight;
+  airborne(plane, 48, 62, 150, -0.06, -0.28, 0.02);
+  plane.throttle = 0.66;
+  plane.rpm = 0.72;
+  plane.fuel = 0.71;
+  plane.damage = 0;
+  plane.flaps = 1;
+  session.mission = createMissionState('first-light');
+  session.mission.status = 'flying';
+  session.mission.rings = 3;
+  markRings(session, 3);
+  moveRing(session, 3, 8, 54, 28);
+  moveRing(session, 4, -6, 42, -150);
+  session.scripted = true;
+  flyToward(session, 36, { x: 8, z: 28 }, 54);
+  airborne(plane, 28, 50, 92, -0.04, -0.33, 0.04);
+  plane.throttle = 0.66;
+  plane.rpm = 0.72;
+  plane.fuel = 0.7;
+  plane.damage = 0;
+  plane.flaps = 1;
+  frameCamera(session, 'chase', 0.48, -0.12, 0.78, 6);
+  session.objective = { title: 'FIRST LIGHT', line: 'RING 4/6  ·  HARBOUR FIELD', timer: '02:46' };
+  session.callout = { title: 'RING 4/6', line: 'RING CLEAN +150', color: '#9dffb8' };
+  session.sack = null;
+  session.target = null;
+}
+
+function stageCockpit(session) {
+  const plane = session.flight;
+  airborne(plane, 0, 42, 160, 0, 0, -0.04);
+  plane.throttle = 0.48;
+  plane.rpm = 0.58;
+  plane.fuel = 0.46;
+  plane.damage = 0.02;
+  plane.flaps = 2;
+  session.mission = createMissionState('first-light');
+  session.mission.rings = 6;
+  markRings(session, 5);
+  session.scripted = true;
+  flyToward(session, 28, { x: HARBOUR.x, z: HARBOUR.z }, 26);
+  airborne(plane, 0.4, 16, 18, 0.005, 0.01, -0.06);
+  plane.throttle = 0.46;
+  plane.rpm = 0.57;
+  plane.fuel = 0.44;
+  plane.flaps = 2;
+  pinVelocity(plane, 32);
+  plane.vy = -2.4;
+  frameCamera(session, 'cockpit', 0, -0.04, 1, 8);
+  session.objective = { title: 'FIRST LIGHT', line: 'HARBOUR  ·  SHORT FINAL', timer: '00:38' };
+  session.callout = null;
+  session.sack = null;
+  session.target = null;
+}
+
+function stageMail(session) {
+  const plane = session.flight;
+  airborne(plane, 210, 36, 20, 2.4, 0.22, -0.03);
+  plane.throttle = 0.55;
+  plane.rpm = 0.6;
+  plane.fuel = 0.31;
+  plane.damage = 0.05;
+  plane.flaps = 1;
+  session.mission = createMissionState('mail-drop');
+  session.mission.status = 'flying';
+  session.mission.drops = 3;
+  markRings(session, 6);
+  session.scripted = true;
+  flyToward(session, 24, { x: VILLAGE.x, z: VILLAGE.z }, 28);
+  airborne(plane, 148, 30, 36, 0.18, -0.26, 0.03);
+  plane.fuel = 0.3;
+  plane.throttle = 0.52;
+  plane.rpm = 0.58;
+  plane.flaps = 1;
+  pinVelocity(plane, 34);
+  frameCamera(session, 'chase', 0.62, -0.16, 1.15, 8);
+  session.objective = { title: 'MAIL DROP', line: 'DROPS 3/5  ·  PAY $180', timer: '01:12' };
+  session.callout = { title: 'ROOFTOP', line: '+250 BULLSEYE', color: '#ffe08a' };
+  session.sack = { x: 164, y: 15, z: -28 };
+  session.target = { x: VILLAGE.x, y: 7.6, z: VILLAGE.z };
+}
+
+function stageTouchdown(session) {
+  const plane = session.flight;
+  const y = HARBOUR.elevation + WORLD.gear + 0.55;
+  airborne(plane, 3.2, y + 8, 20, 0, 0, -0.02);
+  plane.throttle = 0.18;
+  plane.rpm = 0.42;
+  plane.fuel = 0.22;
+  plane.damage = 0;
+  plane.flaps = 2;
+  session.mission = createMissionState('first-light');
+  session.mission.rings = 6;
+  markRings(session, 6);
+  session.scripted = true;
+  flyToward(session, 20, { x: 0, z: -80 }, y + 1);
+  airborne(plane, 1.4, y, -72, 0.01, -0.03, 0.012);
+  plane.throttle = 0.12;
+  plane.rpm = 0.36;
+  plane.fuel = 0.22;
+  plane.flaps = 2;
+  pinVelocity(plane, 28);
+  plane.vy = -0.6;
+  frameCamera(session, 'chase', 0.22, -0.28, 0.62, 3);
+  session.objective = { title: 'FIRST LIGHT', line: 'HARBOUR 36  ·  ROLLOUT', timer: '00:08' };
+  session.callout = null;
+  session.eventBanner = { title: 'TOUCHDOWN', detail: 'GRADE A  ·  160 FPM', crash: false };
+  session.sack = null;
+  session.target = null;
+}
+
 export function stageShot(name, session) {
   const shot = name || 'cover';
   session.screen = 'flight';
-  placeCover(session);
-  if (shot === 'cockpit') {
-    placeFinal(session);
-    flyToward(session, 36, { x: HARBOUR.x, z: HARBOUR.z }, 40);
-    session.objective = { title: 'FIRST LIGHT', line: 'HARBOUR FIELD · FINAL 0.1 NM', timer: '00:42' };
-  } else if (shot === 'missions') {
-    flyToward(session, 50, FIRST_LIGHT_RINGS[COVER_RING], 56);
-    session.mission = createMissionState('ice-market');
-    session.selectedMission = 2;
-    session.screen = 'missions';
-  } else if (shot === 'debrief') {
-    placeFinal(session);
-    flyToward(session, 30, { x: HARBOUR.x, z: HARBOUR.z }, 28);
-    session.flight.x = HARBOUR.x + 4;
-    session.flight.y = HARBOUR.elevation + WORLD.gear;
-    session.flight.z = HARBOUR.z;
-    session.flight.yaw = -0.25;
-    session.flight.pitch = 0;
-    session.flight.roll = 0;
-    session.flight.vx = 0;
-    session.flight.vy = 0;
-    session.flight.vz = 0;
-    session.flight.fuel = 0.11;
-    session.flight.onGround = true;
-    session.camera.mode = 'chase';
-    session.camera.lookYaw = -0.3;
-    session.camera.ready = false;
-    session.time = 271;
-    session.mission = createMissionState('first-light');
-    session.mission.status = 'complete';
-    session.mission.rings = 6;
-    session.mission.landing = { grade: 'A', fpm: 142, offset: 4, zone: 86, score: 94 };
-    session.mission.score = 694;
-    session.mission.stars = 3;
-    session.mission.pay = 226;
-    session.mission.stats = { fuel: 11, damage: 4, elapsed: 271 };
-    session.screen = 'debrief';
-  } else {
-    const coverRing = session.rings.list[COVER_RING];
-    coverRing.x = 18;
-    coverRing.y = 50;
-    coverRing.z = 12;
-    coverRing.group.position.set(coverRing.x, coverRing.y, coverRing.z);
-    const followingRing = session.rings.list[COVER_RING + 1];
-    if (followingRing) followingRing.group.visible = false;
-    flyToward(session, 50, coverRing, 56);
-    pinApproach(session);
-    session.objective = {
-      title: 'MISSION 1 · FIRST LIGHT',
-      line: 'RING 4/6 - THEN LAND\nAT HARBOUR FIELD',
-      timer: '02:46',
-    };
-  }
-  session.frozen = true;
+  session.callout = null;
+  session.eventBanner = null;
+  session.sack = null;
+  session.target = null;
+  if (shot === 'cockpit') stageCockpit(session);
+  else if (shot === 'maildrop' || shot === 'mail') stageMail(session);
+  else if (shot === 'touchdown' || shot === 'landing') stageTouchdown(session);
+  else stageCover(session);
+  finish(session);
 }

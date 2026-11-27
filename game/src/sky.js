@@ -37,56 +37,62 @@ function noise(index, axis) {
   return value - Math.floor(value);
 }
 
+function puffTexture() {
+  const canvas = document.createElement('canvas');
+  canvas.width = 256;
+  canvas.height = 256;
+  const brush = canvas.getContext('2d');
+  brush.clearRect(0, 0, 256, 256);
+  const glow = brush.createRadialGradient(128, 112, 8, 128, 136, 126);
+  glow.addColorStop(0, 'rgba(255, 252, 247, 0.96)');
+  glow.addColorStop(0.26, 'rgba(255, 228, 196, 0.70)');
+  glow.addColorStop(0.52, 'rgba(255, 214, 186, 0.34)');
+  glow.addColorStop(0.76, 'rgba(220, 210, 226, 0.12)');
+  glow.addColorStop(1, 'rgba(220, 210, 226, 0)');
+  brush.fillStyle = glow;
+  brush.beginPath();
+  brush.ellipse(128, 132, 118, 78, 0, 0, Math.PI * 2);
+  brush.fill();
+  const texture = new THREE.CanvasTexture(canvas);
+  texture.colorSpace = THREE.SRGBColorSpace;
+  return texture;
+}
+
 function buildClouds() {
-  const clouds = new THREE.InstancedMesh(
-    new THREE.SphereGeometry(24, 8, 6),
-    new THREE.MeshStandardMaterial({
-      color: 0xffffff,
-      roughness: 1,
-      flatShading: true,
-      transparent: true,
-      opacity: 0.88,
-      depthWrite: false,
-    }),
-    132,
-  );
-  const dummy = new THREE.Object3D();
-  const tint = new THREE.Color();
-  let index = 0;
-  for (let cluster = 0; cluster < 30; cluster += 1) {
-    const forward = cluster < 18;
-    const angle = forward
-      ? -Math.PI / 2 + (cluster / 17 - 0.5) * 1.0
-      : (cluster - 18) / 12 * Math.PI * 2 + noise(cluster, 1) * 0.16;
-    const distance = forward
-      ? 600 + noise(cluster, 2) * 900
-      : 1000 + noise(cluster, 2) * 1900;
-    const centerX = Math.cos(angle) * distance;
-    const centerZ = Math.sin(angle) * distance;
-    const centerY = forward
-      ? 180 + noise(cluster, 3) * 160
-      : 260 + noise(cluster, 3) * 220;
-    const puffs = 3 + cluster % 2;
+  const clouds = new THREE.Group();
+  const map = puffTexture();
+  const sunlit = new THREE.SpriteMaterial({
+    map, color: 0xfff6ea, transparent: true, opacity: 0.9,
+    depthWrite: false, fog: false,
+  });
+  const belly = new THREE.SpriteMaterial({
+    map, color: 0xe7e0ea, transparent: true, opacity: 0.42,
+    depthWrite: false, fog: false,
+  });
+  const places = [
+    [-240, 230, -40, 0.28], [380, 260, -180, 0.34], [-80, 300, -640, 0.42],
+    [-680, 640, -1680, 1], [420, 600, -2100, 1], [1100, 720, -980, 1],
+    [-1500, 680, -420, 1], [240, 700, 1760, 1], [-360, 760, -860, 1],
+  ];
+  for (let cluster = 0; cluster < places.length; cluster += 1) {
+    const [centerX, centerY, centerZ, scale] = places[cluster];
+    const puffs = 4;
     for (let puff = 0; puff < puffs; puff += 1) {
-      const side = (puff - (puffs - 1) * 0.5) * 42;
-      const size = 0.75 + noise(cluster * 7 + puff, 4) * 1.15;
-      dummy.position.set(
-        centerX + Math.cos(angle + Math.PI / 2) * side + (noise(cluster * 9 + puff, 5) - 0.5) * 36,
-        centerY + (noise(cluster * 11 + puff, 6) - 0.5) * 24,
-        centerZ + Math.sin(angle + Math.PI / 2) * side,
+      const warm = new THREE.Sprite(sunlit);
+      const size = (70 + noise(cluster * 5 + puff, 4) * 90) * scale;
+      warm.position.set(
+        centerX + (noise(cluster * 3 + puff, 1) - 0.5) * 220,
+        centerY + (noise(cluster * 3 + puff, 2) - 0.35) * 40,
+        centerZ + (noise(cluster * 3 + puff, 3) - 0.5) * 160,
       );
-      dummy.rotation.set(0, angle, 0);
-      dummy.scale.set(size * 1.55, size * 0.7, size);
-      dummy.updateMatrix();
-      clouds.setMatrixAt(index, dummy.matrix);
-      tint.setHex(puff === 0 ? 0xffe6c6 : 0xfff5e4);
-      clouds.setColorAt(index, tint);
-      index += 1;
+      warm.scale.set(size * 1.7, size * 0.95, 1);
+      clouds.add(warm);
+      const under = new THREE.Sprite(belly);
+      under.position.set(warm.position.x, warm.position.y - 28, warm.position.z);
+      under.scale.set(size * 1.35, size * 0.55, 1);
+      clouds.add(under);
     }
   }
-  clouds.count = index;
-  clouds.instanceMatrix.needsUpdate = true;
-  if (clouds.instanceColor) clouds.instanceColor.needsUpdate = true;
   return clouds;
 }
 
