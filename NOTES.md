@@ -66,3 +66,8 @@ Limestone pinnacles are cooler grey with faceted sides, cave mouths, and greener
 The Harbour 36 reads upright on short final. The cockpit six-pack now has a lit attitude ball beside airspeed, altitude, heading, fuel, and vertical speed.
 The mail-drop card matches the sortie (2/3 sacks, $420) with 30% fuel, and the touchdown frame keeps wheels on the numbers under a small grade-A overlay.
 Title boot showed all five missions and no console errors. Every game module parses. main.ts produced byte-identical dossiers on two runs; vendor files are unchanged.
+
+V2 repair: the kit check failed thinking_reproduces because main.ts had no authored line (4 absent).
+Rewrote main.ts by hand as a readable packer: it mirrors game/ and screenshots/ into MAKEFUN_OUTPUT_DIR or /output, then writes dossier.json with the starter caps.
+Ran the packer twice into out/. Both dossier SHA-256 hashes matched (A21F6C463292030EE2DC500D8944C3434C3001ABB4E504B02DC3FDABC023183A).
+out/game/index.html, out/dossier.json, and exactly four JPEGs were present; vendor/makefun-game.ts and .makefun/owner.json were not edited.
