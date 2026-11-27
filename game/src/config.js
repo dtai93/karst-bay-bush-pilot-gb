@@ -195,11 +195,12 @@ export function islandHeight(x, z) {
 export function towerRadiusAt(tower, y, angle) {
   const u = Math.max(0, Math.min(1, y / tower.h));
   const seed = tower.seed ?? 1;
-  const taper = 0.96 - 0.26 * u + 0.12 * Math.sin((u * 2.3 + 0.08) * Math.PI);
-  const waist = 1 - 0.13 * Math.exp(-((u - 0.52) ** 2) / 0.018);
-  const irregular = 1 + 0.17 * Math.sin(angle * 3 + seed * 1.7 + u * 3) + 0.09 * Math.sin(angle * 7 - seed + u * 9);
-  const topRag = u > 0.72 ? 1 + 0.19 * Math.sin(angle * 5 + seed) + 0.09 * Math.sin(angle * 9 - seed * 2) : 1;
-  return Math.max(tower.r * 0.38, tower.r * taper * waist * irregular * topRag);
+  const foot = u < 0.1 ? 0.8 + u * 1.4 : 1;
+  const taper = 1.02 - 0.46 * u + 0.1 * Math.sin((u * 2.2 + seed) * Math.PI);
+  const shelf = 1 + 0.06 * Math.sin(u * 11 + seed * 2);
+  const irregular = 1 + 0.2 * Math.sin(angle * 3 + seed * 1.7) + 0.08 * Math.sin(angle * 5 - seed + u * 4);
+  const topRag = u > 0.84 ? 0.78 + 0.1 * Math.sin(angle * 4 + seed) : 1;
+  return Math.max(tower.r * 0.32, tower.r * foot * taper * shelf * irregular * topRag);
 }
 
 function towerColumn(x, z, tower) {

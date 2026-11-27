@@ -60,3 +60,9 @@ The Kestrel wing is a thick cambered airfoil with a dark underside, red tip caps
 Chase HUD is a slim edge glass stack (HDG, KTS, ALT, THR/FUEL/DMG, mission, minimap). Brake and engine-rough no longer share a line, and the cockpit view drops the extra systems slab.
 Cockpit view is a 3D glare shield, pillars, lit six-pack and yoke on short final to Harbour 36, with the runway and PAPI through the glass.
 Shots are four live 1280x720 moments: First Light ring, Harbour final, mail drop over the stilt village at 30% fuel, and a grade-A touchdown on the 36. Old menu shots were removed.
+
+Phase 4 final review: recaptured all four shots at 1280x720 from the current build and judged each frame.
+Limestone pinnacles are cooler grey with faceted sides, cave mouths, and greener crowns; bay water keeps its teal instead of washing out.
+The Harbour 36 reads upright on short final. The cockpit six-pack now has a lit attitude ball beside airspeed, altitude, heading, fuel, and vertical speed.
+The mail-drop card matches the sortie (2/3 sacks, $420) with 30% fuel, and the touchdown frame keeps wheels on the numbers under a small grade-A overlay.
+Title boot showed all five missions and no console errors. Every game module parses. main.ts produced byte-identical dossiers on two runs; vendor files are unchanged.

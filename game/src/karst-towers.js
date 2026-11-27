@@ -9,8 +9,8 @@ function hash(a, b, seed) {
 }
 
 function towerGeometry(tower, index) {
-  const radial = 18;
-  const rows = 24;
+  const radial = 12;
+  const rows = 16;
   const positions = [];
   const colors = [];
   const indices = [];
@@ -19,18 +19,25 @@ function towerGeometry(tower, index) {
     const y = u * tower.h;
     for (let side = 0; side < radial; side += 1) {
       const angle = side / radial * Math.PI * 2;
-      const jag = 1 + 0.16 * Math.sin(angle * 5 + index) + 0.07 * Math.sin(row * 1.7 + angle * 3);
-      const radius = towerRadiusAt(tower, y, angle) * jag;
+      const jag = 1 + 0.2 * Math.sin(angle * 3 + index * 1.4) + 0.08 * Math.sin(row * 1.6 + angle * 2);
+      const cave = u > 0.2 && u < 0.46 && Math.cos(angle - index * 0.7) > 0.45;
+      const radius = towerRadiusAt(tower, y, angle) * jag * (cave ? 0.46 : 1);
       const x = Math.cos(angle) * radius + tower.leanX * u;
       const z = Math.sin(angle) * radius + tower.leanZ * u;
       positions.push(x, y, z);
-      const streak = Math.sin(angle * 3 + index + row * 0.35);
-      const cave = u > 0.18 && u < 0.36 && Math.cos(angle - index) > 0.72;
+      const sun = 0.5 + 0.5 * Math.cos(angle - 0.9);
+      const streak = 0.78 + 0.22 * Math.sin(angle * 6 + row * 0.7 + index);
       const wet = u < 0.08 ? 0.62 : 1;
-      const shade = Math.max(0.45, Math.min(1.05, 0.78 + streak * 0.22)) * wet;
-      if (cave) colors.push(0.16, 0.15, 0.14);
-      else if (u > 0.86) colors.push(0.34 * shade, 0.42 * shade, 0.28 * shade);
-      else colors.push(0.62 * shade, 0.58 * shade, 0.5 * shade);
+      const shade = (0.48 + sun * 0.28) * streak * wet;
+      if (cave) colors.push(0.05, 0.055, 0.05);
+      else if (u > 0.88) colors.push(0.22 * shade, 0.36 * shade, 0.2 * shade);
+      else {
+        colors.push(
+          (0.32 + 0.14 * sun) * shade,
+          (0.36 + 0.1 * sun) * shade,
+          (0.38 + 0.06 * sun) * shade,
+        );
+      }
     }
   }
   for (let row = 0; row < rows; row += 1) {
@@ -44,7 +51,7 @@ function towerGeometry(tower, index) {
   }
   const top = positions.length / 3;
   positions.push(tower.leanX, tower.h, tower.leanZ);
-  colors.push(0.62, 0.59, 0.49);
+  colors.push(0.28, 0.4, 0.24);
   const firstTop = rows * radial;
   for (let side = 0; side < radial; side += 1) {
     indices.push(firstTop + side, top, firstTop + (side + 1) % radial);
@@ -62,7 +69,7 @@ function addCrown(group, tower, index, foliage, ledge) {
   for (let tree = 0; tree < count; tree += 1) {
     const angle = tree / count * Math.PI * 2 + index;
     const radius = tower.r * (0.18 + hash(tree, 2, index) * 0.42);
-    const size = tower.r * (0.16 + hash(tree, 4, index) * 0.12);
+    const size = tower.r * (0.24 + hash(tree, 4, index) * 0.16);
     const crown = new THREE.Mesh(new THREE.IcosahedronGeometry(size, 0), tree % 3 ? foliage : ledge);
     crown.position.set(
       tower.x + tower.leanX + Math.cos(angle) * radius,
@@ -92,15 +99,28 @@ function addCrown(group, tower, index, foliage, ledge) {
 
 export function createKarstTowers() {
   const group = new THREE.Group();
-  const limestone = new THREE.MeshStandardMaterial({ vertexColors: true, flatShading: true, roughness: 0.96 });
-  const foliage = new THREE.MeshStandardMaterial({ color: 0x28583a, flatShading: true, roughness: 0.92 });
-  const ledge = new THREE.MeshStandardMaterial({ color: 0x49713d, flatShading: true, roughness: 0.9 });
+  const limestone = new THREE.MeshStandardMaterial({ vertexColors: true, flatShading: true, roughness: 0.92 });
+  const foliage = new THREE.MeshStandardMaterial({ color: 0x1c7a38, flatShading: true, roughness: 0.88 });
+  const ledge = new THREE.MeshStandardMaterial({ color: 0x46a24a, flatShading: true, roughness: 0.86 });
+  const caveMat = new THREE.MeshStandardMaterial({ color: 0x141210, roughness: 1, flatShading: true });
   for (let i = 0; i < TOWERS.length; i += 1) {
     const tower = TOWERS[i];
     const cliff = new THREE.Mesh(towerGeometry(tower, i), limestone);
     cliff.position.set(tower.x, 0, tower.z);
     group.add(cliff);
     addCrown(group, tower, i, foliage, ledge);
+    const caveY = tower.h * (0.3 + hash(i, 3, 5) * 0.12);
+    const angle = i * 0.85;
+    const radius = towerRadiusAt(tower, caveY, angle) * 0.82;
+    const mouth = new THREE.Mesh(new THREE.SphereGeometry(tower.r * 0.2, 7, 5), caveMat);
+    mouth.scale.set(1.25, 0.7, 0.48);
+    const u = caveY / tower.h;
+    mouth.position.set(
+      tower.x + tower.leanX * u + Math.cos(angle) * radius,
+      caveY,
+      tower.z + tower.leanZ * u + Math.sin(angle) * radius,
+    );
+    group.add(mouth);
   }
   return group;
 }

@@ -63,7 +63,9 @@ function buildStrip(field) {
 
   if (asphalt) {
     const south = paintedNumber('36');
+    south.rotation.order = 'YXZ';
     south.rotation.x = -Math.PI / 2;
+    south.rotation.z = Math.PI;
     south.position.set(0, 0.24, half - 42);
     group.add(south);
     const north = paintedNumber('18');

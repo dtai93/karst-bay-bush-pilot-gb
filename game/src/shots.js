@@ -102,7 +102,7 @@ function stageCover(session) {
   plane.fuel = 0.7;
   plane.damage = 0;
   plane.flaps = 1;
-  frameCamera(session, 'chase', 0.48, -0.12, 0.78, 6);
+  frameCamera(session, 'chase', 0.42, -0.14, 0.74, 6);
   session.objective = { title: 'FIRST LIGHT', line: 'RING 4/6  ·  HARBOUR FIELD', timer: '02:46' };
   session.callout = { title: 'RING 4/6', line: 'RING CLEAN +150', color: '#9dffb8' };
   session.sack = null;
@@ -146,21 +146,21 @@ function stageMail(session) {
   plane.flaps = 1;
   session.mission = createMissionState('mail-drop');
   session.mission.status = 'flying';
-  session.mission.drops = 3;
+  session.mission.drops = 2;
   markRings(session, 6);
   session.scripted = true;
   flyToward(session, 24, { x: VILLAGE.x, z: VILLAGE.z }, 28);
-  airborne(plane, 148, 30, 36, 0.18, -0.26, 0.03);
+  airborne(plane, 160, 24, -28, 0.16, -0.38, 0.03);
   plane.fuel = 0.3;
   plane.throttle = 0.52;
   plane.rpm = 0.58;
   plane.flaps = 1;
   pinVelocity(plane, 34);
-  frameCamera(session, 'chase', 0.62, -0.16, 1.15, 8);
-  session.objective = { title: 'MAIL DROP', line: 'DROPS 3/5  ·  PAY $180', timer: '01:12' };
+  frameCamera(session, 'chase', 0.72, -0.2, 0.82, 6);
+  session.objective = { title: 'MAIL DROP', line: 'DROPS 2/3  ·  PAY $420', timer: '01:12' };
   session.callout = { title: 'ROOFTOP', line: '+250 BULLSEYE', color: '#ffe08a' };
-  session.sack = { x: 164, y: 15, z: -28 };
-  session.target = { x: VILLAGE.x, y: 7.6, z: VILLAGE.z };
+  session.sack = { x: 164, y: 16, z: -58 };
+  session.target = { x: VILLAGE.x, y: 12.4, z: VILLAGE.z };
 }
 
 function stageTouchdown(session) {
@@ -184,7 +184,8 @@ function stageTouchdown(session) {
   plane.flaps = 2;
   pinVelocity(plane, 28);
   plane.vy = -0.6;
-  frameCamera(session, 'chase', 0.22, -0.28, 0.62, 3);
+  plane.brake = true;
+  frameCamera(session, 'chase', 0.78, -0.2, 0.78, 4);
   session.objective = { title: 'FIRST LIGHT', line: 'HARBOUR 36  ·  ROLLOUT', timer: '00:08' };
   session.callout = null;
   session.eventBanner = { title: 'TOUCHDOWN', detail: 'GRADE A  ·  160 FPM', crash: false };

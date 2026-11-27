@@ -143,9 +143,9 @@ export function createAircraft() {
     b.geometry.translate(0, 1.15, 0);
     b.rotation.z = i * Math.PI * 2 / 3;
   }
-  const disc = mesh(prop, new THREE.CircleGeometry(1.42, 40), mat(0xe9f7fb, { opacity: 0.4 }), [0, 0, 0.04]);
+  const disc = mesh(prop, new THREE.CircleGeometry(1.42, 40), mat(0xe7f6ff, { opacity: 0.5 }), [0, 0, 0.04]);
   disc.material.side = THREE.DoubleSide;
-  const rim = mesh(prop, new THREE.RingGeometry(1.22, 1.48, 40), mat(0xf4fbff, { opacity: 0.62 }), [0, 0, 0.05]);
+  const rim = mesh(prop, new THREE.RingGeometry(1.18, 1.5, 40), mat(0xf7fdff, { opacity: 0.82 }), [0, 0, 0.05]);
   rim.material.side = THREE.DoubleSide;
   mesh(prop, new THREE.SphereGeometry(0.2, 12, 8), red, [0, 0, -0.08]);
 
@@ -194,6 +194,47 @@ function paintGauge(ctx, label, value, fraction) {
   ctx.fillText(value, 64, 96);
 }
 
+function paintAttitude(ctx, pitch, roll) {
+  ctx.clearRect(0, 0, 128, 128);
+  ctx.save();
+  ctx.beginPath();
+  ctx.arc(64, 64, 60, 0, Math.PI * 2);
+  ctx.clip();
+  ctx.translate(64, 64);
+  ctx.rotate(-roll);
+  const offset = Math.max(-36, Math.min(36, -pitch * 80));
+  ctx.fillStyle = '#3aa6e6';
+  ctx.fillRect(-90, -120, 180, 120 + offset);
+  ctx.fillStyle = '#8d5a30';
+  ctx.fillRect(-90, offset, 180, 140);
+  ctx.strokeStyle = '#f7fbff';
+  ctx.lineWidth = 3;
+  ctx.beginPath();
+  ctx.moveTo(-70, offset);
+  ctx.lineTo(70, offset);
+  ctx.stroke();
+  ctx.restore();
+  ctx.strokeStyle = '#7ef3ff';
+  ctx.lineWidth = 5;
+  ctx.beginPath();
+  ctx.arc(64, 64, 62, 0, Math.PI * 2);
+  ctx.stroke();
+  ctx.strokeStyle = '#ffcf6a';
+  ctx.lineWidth = 4;
+  ctx.beginPath();
+  ctx.moveTo(38, 66);
+  ctx.lineTo(54, 66);
+  ctx.moveTo(74, 66);
+  ctx.lineTo(90, 66);
+  ctx.moveTo(64, 66);
+  ctx.lineTo(64, 78);
+  ctx.stroke();
+  ctx.fillStyle = '#e9fbff';
+  ctx.font = '700 14px Arial, sans-serif';
+  ctx.textAlign = 'center';
+  ctx.fillText('ATT', 64, 22);
+}
+
 function buildCockpit() {
   const cockpit = new THREE.Group();
   const shell = new THREE.MeshBasicMaterial({ color: 0x1a2128 });
@@ -212,7 +253,7 @@ function buildCockpit() {
   const wheel = mesh(cockpit, new THREE.TorusGeometry(0.11, 0.02, 8, 18), yokeMat, [0, 0.4, -0.28]);
   wheel.rotation.x = 0.55;
 
-  const labels = ['KTS', 'ALT', 'HDG', 'FUEL', 'VS', 'RPM'];
+  const labels = ['KTS', 'ATT', 'ALT', 'HDG', 'FUEL', 'VS'];
   const dials = [];
   for (let i = 0; i < labels.length; i += 1) {
     const canvas = document.createElement('canvas');
@@ -242,14 +283,15 @@ function refreshDials(cockpit, plane) {
   const speed = Math.hypot(plane.vx, plane.vy, plane.vz);
   const values = [
     [String(Math.round(speed * UNITS.mpsToKts)), speed * UNITS.mpsToKts / 140],
+    null,
     [String(Math.round(plane.y * UNITS.mToFt)), plane.y * UNITS.mToFt / 1800],
     [formatHdg(plane.yaw), headingDeg(plane.yaw) / 360],
     [`${Math.round(plane.fuel * 100)}`, plane.fuel],
     [String(Math.round(plane.vy * UNITS.mpsToFpm)), (plane.vy * UNITS.mpsToFpm + 1200) / 2400],
-    [`${Math.round(plane.rpm * 100)}`, plane.rpm],
   ];
   for (let i = 0; i < dials.length; i += 1) {
-    paintGauge(dials[i].ctx, dials[i].label, values[i][0], values[i][1]);
+    if (i === 1) paintAttitude(dials[i].ctx, plane.pitch, plane.roll);
+    else paintGauge(dials[i].ctx, dials[i].label, values[i][0], values[i][1]);
     dials[i].texture.needsUpdate = true;
   }
 }

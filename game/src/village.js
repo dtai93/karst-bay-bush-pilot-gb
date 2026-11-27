@@ -6,38 +6,38 @@ import { LIGHTHOUSE, RESCUE_BOAT, VILLAGE, islandHeight } from './config.js';
 function house(group, x, z, wood, roof) {
   const floor = islandHeight(x, z);
   const base = Math.max(floor, 0.4);
-  for (const corner of [[-1.6, -1.2], [1.6, -1.2], [-1.6, 1.2], [1.6, 1.2]]) {
-    const pole = new THREE.Mesh(new THREE.CylinderGeometry(0.1, 0.12, 3.4, 5), wood);
-    pole.position.set(x + corner[0], base + 1.5, z + corner[1]);
+  for (const corner of [[-2.7, -2], [2.7, -2], [-2.7, 2], [2.7, 2]]) {
+    const pole = new THREE.Mesh(new THREE.CylinderGeometry(0.14, 0.16, 5.6, 5), wood);
+    pole.position.set(x + corner[0], base + 2.5, z + corner[1]);
     group.add(pole);
   }
-  const deck = new THREE.Mesh(new THREE.BoxGeometry(4.6, 0.18, 3.4), wood);
-  deck.position.set(x, base + 3.3, z);
+  const deck = new THREE.Mesh(new THREE.BoxGeometry(7.6, 0.22, 5.6), wood);
+  deck.position.set(x, base + 5.4, z);
   group.add(deck);
-  const wall = new THREE.Mesh(new THREE.BoxGeometry(4.2, 2.1, 3.1), wood);
-  wall.position.set(x, base + 4.4, z);
+  const wall = new THREE.Mesh(new THREE.BoxGeometry(7, 3.2, 5.1), wood);
+  wall.position.set(x, base + 7.1, z);
   group.add(wall);
-  const cap = new THREE.Mesh(new THREE.ConeGeometry(3.8, 1.8, 4), roof);
-  cap.position.set(x, base + 6.25, z);
+  const cap = new THREE.Mesh(new THREE.ConeGeometry(6.2, 2.6, 4), roof);
+  cap.position.set(x, base + 9.6, z);
   cap.rotation.y = Math.PI / 4;
   group.add(cap);
   const window = new THREE.Mesh(
-    new THREE.BoxGeometry(0.7, 0.7, 0.08),
+    new THREE.BoxGeometry(1.15, 1.05, 0.08),
     new THREE.MeshBasicMaterial({ color: 0xffc56a }),
   );
-  window.position.set(x, base + 4.5, z + 1.56);
+  window.position.set(x, base + 7.2, z + 2.56);
   group.add(window);
 }
 
 function boat(group, x, z, hull, sail) {
-  const body = new THREE.Mesh(new THREE.BoxGeometry(1.5, 0.45, 4.2), hull);
-  body.position.set(x, 0.45, z);
+  const body = new THREE.Mesh(new THREE.BoxGeometry(2.4, 0.7, 6.8), hull);
+  body.position.set(x, 0.55, z);
   group.add(body);
   const mast = new THREE.Mesh(
-    new THREE.CylinderGeometry(0.05, 0.05, 3.2, 5),
+    new THREE.CylinderGeometry(0.07, 0.07, 5.2, 5),
     new THREE.MeshStandardMaterial({ color: 0x6a5038, roughness: 0.7 }),
   );
-  mast.position.set(x, 2.1, z);
+  mast.position.set(x, 3.2, z);
   group.add(mast);
   const makeSail = (width, height) => {
     const shape = new THREE.Shape();
@@ -47,11 +47,11 @@ function boat(group, x, z, hull, sail) {
     shape.closePath();
     return new THREE.Mesh(new THREE.ShapeGeometry(shape), sail);
   };
-  const mainsail = makeSail(1.05, 2.5);
-  mainsail.position.set(x + 0.55, 2.35, z + 0.04);
+  const mainsail = makeSail(1.7, 4);
+  mainsail.position.set(x + 0.9, 3.5, z + 0.05);
   group.add(mainsail);
-  const foresail = makeSail(-0.7, 1.55);
-  foresail.position.set(x - 0.45, 1.95, z - 0.25);
+  const foresail = makeSail(-1.1, 2.4);
+  foresail.position.set(x - 0.7, 2.9, z - 0.35);
   group.add(foresail);
 }
 
@@ -67,14 +67,14 @@ export function createVillage() {
 
   const homes = [
     [0, 0, wood, roof],
-    [8, 3, woodDark, roofOrange],
-    [-7, 4, wood, roofGold],
-    [4, -7, woodDark, roof],
-    [-3, 9, wood, roofOrange],
-    [16, -5, woodDark, roofGold],
-    [-15, -7, wood, roof],
-    [12, 12, woodDark, roofOrange],
-    [-12, 13, wood, roofGold],
+    [14, 5, woodDark, roofOrange],
+    [-12, 7, wood, roofGold],
+    [7, -12, woodDark, roof],
+    [-5, 16, wood, roofOrange],
+    [26, -8, woodDark, roofGold],
+    [-24, -12, wood, roof],
+    [20, 20, woodDark, roofOrange],
+    [-20, 22, wood, roofGold],
   ];
   for (let i = 0; i < homes.length; i += 1) {
     const home = homes[i];

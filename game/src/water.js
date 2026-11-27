@@ -13,9 +13,9 @@ function rippleTexture() {
   canvas.width = 512;
   canvas.height = 512;
   const pen = canvas.getContext('2d');
-  pen.fillStyle = '#b7cbc4';
+  pen.fillStyle = '#f3faf6';
   pen.fillRect(0, 0, canvas.width, canvas.height);
-  pen.strokeStyle = 'rgba(230, 249, 226, 0.25)';
+  pen.strokeStyle = 'rgba(14, 90, 92, 0.28)';
   pen.lineWidth = 2;
   for (let i = 0; i < 44; i += 1) {
     const x = (i * 137) % 512;
@@ -43,9 +43,9 @@ function rippleTexture() {
 function paintWater(geometry) {
   const position = geometry.attributes.position;
   const colors = new Float32Array(position.count * 3);
-  const deep = new THREE.Color(0x0a555b);
-  const teal = new THREE.Color(0x168078);
-  const shallows = new THREE.Color(0x42c2ad);
+  const deep = new THREE.Color(0x063e52);
+  const teal = new THREE.Color(0x0c7e86);
+  const shallows = new THREE.Color(0x3ed0c4);
   const color = new THREE.Color();
   const sampleDistances = [38, 88, 138];
   for (let i = 0; i < position.count; i += 1) {
@@ -141,8 +141,8 @@ export function createWater() {
     map: texture,
     bumpMap: texture,
     bumpScale: 0.32,
-    roughness: 0.55,
-    metalness: 0.06,
+    roughness: 0.78,
+    metalness: 0.04,
     emissive: 0x0b3532,
     emissiveIntensity: 0.2,
   });
